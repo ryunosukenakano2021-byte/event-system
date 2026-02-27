@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VelvetOS — Event System</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Montserrat:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  :root {
+    --gold: #C9A84C; --gold-light: #E8D08A; --gold-dim: #7a6230;
+    --black: #080808; --dark: #111111; --dark2: #191919; --dark3: #222222;
+    --white: #F5F0E8; --gray: #888880; --gray-light: #555550;
+    --free:   #9B8EC4;
+    --paid:   #4CAF82;
+    --cash:   #E8A838;
+    --unpaid: #CF4444;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--black); color:var(--white); font-family:'Montserrat',sans-serif; font-weight:300; min-height:100vh; overflow-x:hidden; }
+
+  /* NAV */
+  #nav { position:fixed; top:0; left:0; right:0; z-index:100; background:rgba(8,8,8,0.94); backdrop-filter:blur(20px); border-bottom:1px solid rgba(201,168,76,0.2); padding:0 40px; display:flex; align-items:center; justify-content:space-between; height:64px; }
+  .nav-logo { font-family:'Cormorant Garamond',serif; font-size:1.3rem; font-weight:300; letter-spacing:0.3em; color:var(--gold); }
+  .nav-tabs { display:flex; }
+  .nav-tab { background:none; border:none; cursor:pointer; color:var(--gray); font-family:'Montserrat',sans-serif; font-size:0.63rem; font-weight:400; letter-spacing:0.2em; text-transform:uppercase; padding:0 22px; height:64px; border-bottom:2px solid transparent; transition:all 0.3s; }
+  .nav-tab:hover { color:var(--white); }
+  .nav-tab.active { color:var(--gold); border-bottom-color:var(--gold); }
+  .nav-lang { cursor:pointer; background:none; border:1px solid rgba(201,168,76,0.3); padding:6px 14px; color:var(--gold-dim); transition:all 0.3s; font-family:'Montserrat',sans-serif; font-size:0.6rem; letter-spacing:0.15em; }
+  .nav-lang:hover { border-color:var(--gold); color:var(--gold); }
+
+  /* PAGES */
+  .page { display:none; padding-top:64px; min-height:100vh; }
+  .page.active { display:block; }
+  #page-register { display:none; align-items:center; justify-content:center; position:relative; overflow:hidden; }
+  #page-register.active { display:flex; }
+  #page-checkin { display:none; align-items:center; justify-content:center; position:relative; }
+  #page-checkin.active { display:flex; min-height:100vh; }
+
+  .bg-glow { position:absolute; inset:0; pointer-events:none; background:radial-gradient(ellipse 60% 60% at 70% 50%,rgba(201,168,76,0.04) 0%,transparent 70%),radial-gradient(ellipse 40% 80% at 20% 80%,rgba(201,168,76,0.03) 0%,transparent 60%); }
+  .bg-lines { position:absolute; inset:0; opacity:0.04; pointer-events:none; background-image:repeating-linear-gradient(90deg,var(--gold) 0,var(--gold) 1px,transparent 1px,transparent 80px); }
+
+  /* REGISTER */
+  .register-container { position:relative; z-index:2; width:100%; max-width:520px; padding:60px 40px; animation:fadeUp 0.8s ease both; }
+  .register-eyebrow { font-size:0.6rem; letter-spacing:0.4em; color:var(--gold); text-transform:uppercase; margin-bottom:8px; opacity:0.8; }
+  .register-title { font-family:'Cormorant Garamond',serif; font-size:3rem; font-weight:300; line-height:1.1; color:var(--white); margin-bottom:4px; }
+  .register-title em { font-style:italic; color:var(--gold); }
+  .register-subtitle { font-size:0.7rem; letter-spacing:0.15em; color:var(--gray); text-transform:uppercase; margin-bottom:48px; }
+  .promoter-badge { display:inline-flex; align-items:center; gap:10px; border:1px solid rgba(201,168,76,0.3); padding:10px 20px; margin-bottom:40px; background:rgba(201,168,76,0.04); }
+  .promoter-badge-label { font-size:0.55rem; letter-spacing:0.25em; color:var(--gray); text-transform:uppercase; }
+  .promoter-badge-name { font-size:0.8rem; color:var(--gold); letter-spacing:0.1em; }
+  .sep { color:rgba(201,168,76,0.3); }
+  .form-group { margin-bottom:28px; }
+  .form-label { display:block; font-size:0.6rem; letter-spacing:0.25em; color:var(--gray); text-transform:uppercase; margin-bottom:10px; }
+  .form-input { width:100%; background:transparent; border:none; border-bottom:1px solid rgba(255,255,255,0.12); padding:12px 0; color:var(--white); font-family:'Montserrat',sans-serif; font-size:0.9rem; font-weight:300; outline:none; transition:border-color 0.3s; letter-spacing:0.05em; }
+  .form-input::placeholder { color:rgba(255,255,255,0.2); }
+  .form-input:focus { border-bottom-color:var(--gold); }
+  .btn-primary { width:100%; margin-top:16px; background:var(--gold); border:none; cursor:pointer; padding:18px; color:var(--black); font-family:'Montserrat',sans-serif; font-size:0.65rem; font-weight:600; letter-spacing:0.3em; text-transform:uppercase; transition:all 0.3s; position:relative; overflow:hidden; }
+  .btn-primary::before { content:''; position:absolute; inset:0; background:var(--gold-light); transform:translateX(-100%); transition:transform 0.4s; }
+  .btn-primary:hover::before { transform:translateX(0); }
+  .btn-primary span { position:relative; z-index:1; }
+  .register-success { display:none; text-align:center; padding:40px 0; animation:fadeUp 0.6s ease both; }
+  .success-icon { width:64px; height:64px; border:1px solid var(--gold); border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 24px; font-size:1.5rem; }
+  .success-title { font-family:'Cormorant Garamond',serif; font-size:2rem; color:var(--gold); margin-bottom:8px; }
+  .success-text { font-size:0.75rem; color:var(--gray); letter-spacing:0.05em; line-height:1.8; }
+  .qr-wrapper { margin:32px auto; width:fit-content; padding:20px; background:var(--white); }
+
+  /* DASHBOARD */
+  .dash-header { padding:48px 48px 32px; border-bottom:1px solid rgba(255,255,255,0.06); }
+  .dash-eyebrow { font-size:0.58rem; letter-spacing:0.35em; color:var(--gold); text-transform:uppercase; margin-bottom:6px; }
+  .dash-title { font-family:'Cormorant Garamond',serif; font-size:2.4rem; font-weight:300; color:var(--white); }
+  .stats-row { display:grid; grid-template-columns:repeat(6,1fr); gap:1px; background:rgba(255,255,255,0.06); border-bottom:1px solid rgba(255,255,255,0.06); }
+  .stat-card { background:var(--dark); padding:24px 28px; position:relative; overflow:hidden; }
+  .stat-card::after { content:''; position:absolute; bottom:0; left:24px; right:24px; height:1px; background:linear-gradient(90deg,transparent,var(--gold),transparent); opacity:0; transition:opacity 0.3s; }
+  .stat-card:hover::after { opacity:1; }
+  .stat-label { font-size:0.52rem; letter-spacing:0.22em; color:var(--gray); text-transform:uppercase; margin-bottom:8px; }
+  .stat-value { font-family:'Cormorant Garamond',serif; font-size:2.4rem; font-weight:300; line-height:1; }
+  .sv-gold   { color:var(--gold); }
+  .sv-free   { color:var(--free); }
+  .sv-paid   { color:var(--paid); }
+  .sv-cash   { color:var(--cash); }
+  .sv-unpaid { color:var(--unpaid); }
+
+  /* Legend */
+  .pay-legend { display:flex; gap:20px; flex-wrap:wrap; padding:14px 48px; border-bottom:1px solid rgba(255,255,255,0.06); }
+  .legend-item { display:flex; align-items:center; gap:6px; font-size:0.6rem; letter-spacing:0.1em; color:var(--gray); }
+  .legend-dot { width:8px; height:8px; border-radius:50%; }
+
+  /* Toolbar */
+  .toolbar { padding:18px 48px; display:flex; align-items:center; gap:14px; border-bottom:1px solid rgba(255,255,255,0.06); flex-wrap:wrap; }
+  .search-wrap { position:relative; flex:1; min-width:180px; max-width:300px; }
+  .search-input { width:100%; background:var(--dark2); border:1px solid rgba(255,255,255,0.08); padding:10px 14px 10px 36px; color:var(--white); font-family:'Montserrat',sans-serif; font-size:0.72rem; outline:none; transition:border-color 0.3s; }
+  .search-input:focus { border-color:rgba(201,168,76,0.4); }
+  .search-icon { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--gray); font-size:0.72rem; }
+  .filter-select { background:var(--dark2); border:1px solid rgba(255,255,255,0.08); color:var(--gray); padding:10px 12px; font-family:'Montserrat',sans-serif; font-size:0.67rem; letter-spacing:0.06em; outline:none; cursor:pointer; }
+  .filter-select:focus { border-color:rgba(201,168,76,0.4); }
+  .toolbar-spacer { flex:1; }
+  .btn-add { background:transparent; border:1px solid rgba(201,168,76,0.4); color:var(--gold); padding:10px 22px; cursor:pointer; font-family:'Montserrat',sans-serif; font-size:0.6rem; letter-spacing:0.2em; text-transform:uppercase; transition:all 0.3s; }
+  .btn-add:hover { background:rgba(201,168,76,0.08); border-color:var(--gold); }
+
+  /* Table */
+  .table-wrap { padding:0 48px 48px; overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; margin-top:24px; }
+  thead tr { border-bottom:1px solid rgba(201,168,76,0.2); }
+  th { text-align:left; padding:10px 14px; font-size:0.52rem; font-weight:500; letter-spacing:0.22em; color:var(--gold-dim); text-transform:uppercase; }
+  tbody tr { border-bottom:1px solid rgba(255,255,255,0.04); transition:background 0.2s; }
+  tbody tr:hover { background:rgba(255,255,255,0.02); }
+  td { padding:13px 14px; font-size:0.73rem; color:var(--white); }
+  td.muted { color:var(--gray); font-size:0.68rem; }
+  .badge { display:inline-block; padding:3px 10px; font-size:0.52rem; letter-spacing:0.13em; text-transform:uppercase; font-weight:500; }
+  .badge-arrived { background:rgba(76,175,130,0.1); color:var(--paid); border:1px solid rgba(76,175,130,0.3); }
+  .badge-pending { background:rgba(255,255,255,0.04); color:var(--gray); border:1px solid rgba(255,255,255,0.1); }
+  .pay-badge { display:inline-flex; align-items:center; padding:3px 10px; font-size:0.52rem; letter-spacing:0.1em; text-transform:uppercase; font-weight:500; white-space:nowrap; }
+  .pay-free   { background:rgba(155,142,196,0.12); color:var(--free);   border:1px solid rgba(155,142,196,0.3); }
+  .pay-paid   { background:rgba(76,175,130,0.10);  color:var(--paid);   border:1px solid rgba(76,175,130,0.3); }
+  .pay-cash   { background:rgba(232,168,56,0.12);  color:var(--cash);   border:1px solid rgba(232,168,56,0.3); }
+  .pay-unpaid { background:rgba(207,68,68,0.10);   color:var(--unpaid); border:1px solid rgba(207,68,68,0.3); }
+  .btn-checkin { background:none; border:1px solid rgba(76,175,130,0.3); color:var(--paid); padding:5px 14px; cursor:pointer; font-family:'Montserrat',sans-serif; font-size:0.58rem; letter-spacing:0.12em; transition:all 0.3s; }
+  .btn-checkin:hover { background:rgba(76,175,130,0.1); }
+  .btn-checkin:disabled { opacity:0.3; cursor:default; border-color:transparent; color:var(--gray); }
+
+  /* Promoter section */
+  .section-title { font-family:'Cormorant Garamond',serif; font-size:1.6rem; font-weight:300; color:var(--white); padding:40px 48px 0; }
+  .section-title span { color:var(--gold); font-style:italic; }
+  .promoter-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:1px; background:rgba(255,255,255,0.06); margin:24px 48px; }
+  .promoter-card { background:var(--dark); padding:28px 32px; transition:background 0.3s; }
+  .promoter-card:hover { background:var(--dark2); }
+  .promoter-name { font-family:'Cormorant Garamond',serif; font-size:1.3rem; color:var(--white); margin-bottom:14px; }
+  .promoter-stats { display:flex; gap:20px; }
+  .p-stat-val { font-size:1.5rem; font-family:'Cormorant Garamond',serif; color:var(--gold); }
+  .p-stat-label { font-size:0.52rem; letter-spacing:0.18em; color:var(--gray); text-transform:uppercase; }
+  .promoter-bar { margin-top:14px; height:2px; background:rgba(255,255,255,0.08); }
+  .promoter-bar-fill { height:100%; background:linear-gradient(90deg,var(--gold-dim),var(--gold)); transition:width 0.6s; }
+  .promoter-revenue { margin-top:12px; font-size:0.65rem; color:var(--gray); }
+  .promoter-revenue strong { color:var(--gold); font-weight:400; }
+  .promoter-url { margin-top:14px; font-size:0.6rem; color:var(--gray-light); word-break:break-all; border-top:1px solid rgba(255,255,255,0.06); padding-top:12px; display:flex; align-items:center; gap:8px; }
+  .copy-btn { background:none; border:none; color:var(--gold-dim); cursor:pointer; font-size:0.7rem; padding:2px 6px; transition:color 0.2s; }
+  .copy-btn:hover { color:var(--gold); }
+
+  /* CHECKIN PAGE */
+  .checkin-container { position:relative; z-index:2; width:100%; max-width:520px; padding:48px 40px; animation:fadeUp 0.7s ease both; }
+  .checkin-title { font-family:'Cormorant Garamond',serif; font-size:2.4rem; color:var(--white); margin-bottom:4px; }
+  .checkin-title em { color:var(--gold); font-style:italic; }
+  .checkin-sub { font-size:0.65rem; letter-spacing:0.2em; color:var(--gray); text-transform:uppercase; margin-bottom:32px; }
+
+  /* Camera viewer */
+  .camera-wrap { position:relative; width:100%; aspect-ratio:1; background:#000; overflow:hidden; margin-bottom:0; display:none; }
+  .camera-wrap.active { display:block; }
+  #qr-video { width:100%; height:100%; object-fit:cover; display:block; }
+  .camera-overlay { position:absolute; inset:0; pointer-events:none; }
+  /* dark corners */
+  .camera-overlay::before {
+    content:''; position:absolute; inset:0;
+    background:
+      linear-gradient(to right, rgba(0,0,0,0.5) 0%, transparent 30%, transparent 70%, rgba(0,0,0,0.5) 100%),
+      linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, transparent 30%, transparent 70%, rgba(0,0,0,0.5) 100%);
+  }
+  /* scanning reticle */
+  .scan-reticle {
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    width:55%; aspect-ratio:1;
+    border:1px solid rgba(201,168,76,0.6);
+    box-shadow:0 0 0 9999px rgba(0,0,0,0.45);
+  }
+  .scan-reticle::before,.scan-reticle::after,
+  .scan-reticle span::before,.scan-reticle span::after {
+    content:''; position:absolute; width:20px; height:20px; border-color:var(--gold); border-style:solid;
+  }
+  .scan-reticle::before  { top:-1px; left:-1px;  border-width:2px 0 0 2px; }
+  .scan-reticle::after   { top:-1px; right:-1px; border-width:2px 2px 0 0; }
+  .scan-reticle span::before { bottom:-1px; left:-1px;  border-width:0 0 2px 2px; }
+  .scan-reticle span::after  { bottom:-1px; right:-1px; border-width:0 2px 2px 0; }
+  /* scan line animation */
+  .scan-line {
+    position:absolute; top:0; left:0; right:0; height:2px;
+    background:linear-gradient(90deg,transparent,var(--gold),transparent);
+    animation:scanMove 2s linear infinite;
+  }
+  @keyframes scanMove { 0%{top:0} 100%{top:100%} }
+
+  .camera-status { position:absolute; bottom:12px; left:0; right:0; text-align:center; font-size:0.6rem; letter-spacing:0.2em; color:rgba(201,168,76,0.8); text-transform:uppercase; }
+
+  /* camera controls row */
+  .camera-controls { display:flex; gap:0; margin-bottom:16px; }
+  .btn-cam-toggle {
+    flex:1; background:var(--dark2); border:1px solid rgba(201,168,76,0.3); color:var(--gold);
+    padding:14px; cursor:pointer; font-family:'Montserrat',sans-serif; font-size:0.62rem;
+    font-weight:500; letter-spacing:0.2em; text-transform:uppercase; transition:all 0.3s;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .btn-cam-toggle:hover { background:rgba(201,168,76,0.08); }
+  .btn-cam-toggle.active { background:rgba(201,168,76,0.12); border-color:var(--gold); }
+  .btn-cam-flip { width:52px; background:var(--dark2); border:1px solid rgba(255,255,255,0.08); border-left:none; color:var(--gray); cursor:pointer; font-size:1rem; transition:all 0.3s; }
+  .btn-cam-flip:hover { color:var(--white); }
+
+  .divider-or { display:flex; align-items:center; gap:12px; margin:16px 0; }
+  .divider-or::before,.divider-or::after { content:''; flex:1; height:1px; background:rgba(255,255,255,0.08); }
+  .divider-or span { font-size:0.58rem; letter-spacing:0.2em; color:var(--gray); text-transform:uppercase; }
+
+  .manual-input { width:100%; background:var(--dark2); border:1px solid rgba(255,255,255,0.1); padding:16px 20px; color:var(--white); font-family:'Montserrat',sans-serif; font-size:0.85rem; letter-spacing:0.1em; outline:none; transition:border-color 0.3s; text-align:center; margin-bottom:12px; display:block; }
+  .manual-input:focus { border-color:rgba(201,168,76,0.5); }
+  .manual-input::placeholder { color:rgba(255,255,255,0.2); }
+  .btn-scan { width:100%; background:var(--gold); border:none; cursor:pointer; padding:18px; color:var(--black); font-family:'Montserrat',sans-serif; font-size:0.65rem; font-weight:600; letter-spacing:0.3em; text-transform:uppercase; transition:all 0.3s; }
+  .btn-scan:hover { background:var(--gold-light); }
+
+  /* RESULT CARD */
+  .checkin-result { display:none; margin-top:24px; animation:fadeUp 0.35s ease both; }
+  .result-card { padding:28px 28px 24px; border:1px solid; position:relative; overflow:hidden; }
+  .result-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; }
+  .rc-free   { border-color:rgba(155,142,196,0.35); background:rgba(155,142,196,0.06); }
+  .rc-free::before   { background:var(--free); }
+  .rc-paid   { border-color:rgba(76,175,130,0.35);  background:rgba(76,175,130,0.06); }
+  .rc-paid::before   { background:var(--paid); }
+  .rc-cash   { border-color:rgba(232,168,56,0.45);  background:rgba(232,168,56,0.07); }
+  .rc-cash::before   { background:var(--cash); }
+  .rc-unpaid { border-color:rgba(207,68,68,0.4);    background:rgba(207,68,68,0.07); }
+  .rc-unpaid::before { background:var(--unpaid); }
+  .rc-dup    { border-color:rgba(201,168,76,0.4);   background:rgba(201,168,76,0.06); }
+  .rc-dup::before    { background:var(--gold); }
+  .rc-error  { border-color:rgba(207,68,68,0.3);    background:rgba(207,68,68,0.05); }
+  .rc-error::before  { background:var(--unpaid); }
+  .rc-top { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:16px; }
+  .rc-status-label { font-size:0.56rem; letter-spacing:0.28em; text-transform:uppercase; font-weight:500; margin-bottom:6px; }
+  .cl-free   { color:var(--free); }
+  .cl-paid   { color:var(--paid); }
+  .cl-cash   { color:var(--cash); }
+  .cl-unpaid { color:var(--unpaid); }
+  .cl-dup    { color:var(--gold); }
+  .cl-error  { color:var(--unpaid); }
+  .rc-name { font-family:'Cormorant Garamond',serif; font-size:2rem; color:var(--white); line-height:1.1; }
+  .rc-action-icon { width:56px; height:56px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.5rem; flex-shrink:0; }
+  .ai-free   { background:rgba(155,142,196,0.15); border:1px solid rgba(155,142,196,0.4); }
+  .ai-paid   { background:rgba(76,175,130,0.15);  border:1px solid rgba(76,175,130,0.4); }
+  .ai-cash   { background:rgba(232,168,56,0.15);  border:1px solid rgba(232,168,56,0.4); }
+  .ai-unpaid { background:rgba(207,68,68,0.15);   border:1px solid rgba(207,68,68,0.4); }
+  .ai-dup    { background:rgba(201,168,76,0.15);  border:1px solid rgba(201,168,76,0.4); }
+  .ai-error  { background:rgba(207,68,68,0.12);   border:1px solid rgba(207,68,68,0.3); }
+  .rc-divider { height:1px; background:rgba(255,255,255,0.07); margin:16px 0; }
+  .rc-meta { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .rc-meta-label { font-size:0.52rem; letter-spacing:0.2em; color:var(--gray); text-transform:uppercase; margin-bottom:3px; }
+  .rc-meta-value { font-size:0.78rem; color:var(--white); }
+  .rc-instruction { margin-top:16px; padding:14px 18px; font-size:0.72rem; letter-spacing:0.04em; line-height:1.6; }
+  .rc-instruction.inst-cash   { background:rgba(232,168,56,0.1);  border:1px solid rgba(232,168,56,0.3);  color:var(--cash); }
+  .rc-instruction.inst-unpaid { background:rgba(207,68,68,0.08);  border:1px solid rgba(207,68,68,0.3);   color:var(--unpaid); }
+  .btn-confirm-cash { width:100%; margin-top:12px; background:var(--cash); border:none; cursor:pointer; padding:16px; color:var(--black); font-family:'Montserrat',sans-serif; font-size:0.62rem; font-weight:600; letter-spacing:0.25em; text-transform:uppercase; transition:all 0.3s; }
+  .btn-confirm-cash:hover { background:#f0b840; }
+  .amount-big { font-family:'Cormorant Garamond',serif; font-size:2.8rem; line-height:1; }
+  .amt-free { color:var(--free); font-size:1.3rem; letter-spacing:0.05em; }
+  .amt-paid { color:var(--paid); }
+  .amt-cash { color:var(--cash); }
+
+  /* MODAL */
+  .modal-overlay { display:none; position:fixed; inset:0; z-index:200; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); align-items:center; justify-content:center; }
+  .modal-overlay.active { display:flex; }
+  .modal { background:var(--dark); border:1px solid rgba(201,168,76,0.2); width:100%; max-width:500px; padding:48px 40px; animation:fadeUp 0.4s ease both; }
+  .modal-title { font-family:'Cormorant Garamond',serif; font-size:1.8rem; color:var(--white); margin-bottom:32px; }
+  .modal-actions { display:flex; gap:12px; margin-top:32px; }
+  .btn-cancel { flex:1; background:none; border:1px solid rgba(255,255,255,0.1); color:var(--gray); padding:14px; cursor:pointer; font-family:'Montserrat',sans-serif; font-size:0.6rem; letter-spacing:0.2em; transition:all 0.3s; }
+  .btn-cancel:hover { border-color:rgba(255,255,255,0.3); color:var(--white); }
+  .btn-confirm-modal { flex:1; background:var(--gold); border:none; cursor:pointer; padding:14px; color:var(--black); font-family:'Montserrat',sans-serif; font-size:0.6rem; font-weight:600; letter-spacing:0.2em; transition:all 0.3s; }
+  .btn-confirm-modal:hover { background:var(--gold-light); }
+  .modal-select { width:100%; background:var(--dark2); border:none; border-bottom:1px solid rgba(255,255,255,0.12); color:var(--white); padding:12px 0; font-family:'Montserrat',sans-serif; font-size:0.85rem; font-weight:300; outline:none; transition:border-color 0.3s; cursor:pointer; }
+  .modal-select:focus { border-bottom-color:var(--gold); }
+  option { background:var(--dark2); }
+
+  .toast { position:fixed; bottom:32px; right:32px; z-index:500; background:var(--dark2); border:1px solid rgba(201,168,76,0.3); padding:14px 22px; font-size:0.7rem; letter-spacing:0.05em; color:var(--white); display:none; animation:fadeUp 0.4s ease both; }
+  .toast.show { display:block; }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+  @media(max-width:900px) {
+    .stats-row { grid-template-columns:repeat(3,1fr); }
+    .dash-header,.toolbar,.table-wrap,.section-title,.promoter-grid,.pay-legend { padding-left:20px; padding-right:20px; }
+    .promoter-grid { margin-left:20px; margin-right:20px; }
+    #nav { padding:0 16px; }
+    .nav-tab { padding:0 10px; font-size:0.56rem; }
+  }
+  @media(max-width:600px) {
+    .stats-row { grid-template-columns:repeat(2,1fr); }
+    .register-container,.checkin-container { padding:40px 24px; }
+    .rc-meta { grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+
+<nav id="nav">
+  <div class="nav-logo">Velvet<em style="font-style:italic;color:var(--gold-dim)">OS</em></div>
+  <div class="nav-tabs">
+    <button class="nav-tab" onclick="showPage('register')" id="tab-register"><span class="ja">申し込み</span><span class="en" style="display:none">Register</span></button>
+    <button class="nav-tab active" onclick="showPage('dashboard')" id="tab-dashboard"><span class="ja">管理</span><span class="en" style="display:none">Dashboard</span></button>
+    <button class="nav-tab" onclick="showPage('checkin')" id="tab-checkin"><span class="ja">入場</span><span class="en" style="display:none">Check-in</span></button>
+  </div>
+  <button class="nav-lang" onclick="toggleLang()">JA / EN</button>
+</nav>
+
+<!-- REGISTER -->
+<div class="page" id="page-register">
+  <div class="bg-glow"></div><div class="bg-lines"></div>
+  <div class="register-container">
+    <div id="register-form-view">
+      <div class="register-eyebrow ja">招待状</div><div class="register-eyebrow en" style="display:none">Invitation</div>
+      <h1 class="register-title ja">特別な夜へ、<br><em>ようこそ</em></h1>
+      <h1 class="register-title en" style="display:none">Welcome to<br><em>an exclusive</em> night</h1>
+      <div class="register-subtitle ja">事前来場登録</div><div class="register-subtitle en" style="display:none">Pre-Event Registration</div>
+      <div class="promoter-badge">
+        <span class="promoter-badge-label ja">招待者</span><span class="promoter-badge-label en" style="display:none">Invited by</span>
+        <span class="sep">|</span>
+        <span class="promoter-badge-name" id="reg-promoter-name">Alex Morgan</span>
+      </div>
+      <div class="form-group">
+        <label class="form-label ja">お名前</label><label class="form-label en" style="display:none">Full Name</label>
+        <input class="form-input" id="reg-name" type="text" placeholder="山田 太郎" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label class="form-label ja">メールアドレス</label><label class="form-label en" style="display:none">Email Address</label>
+        <input class="form-input" id="reg-email" type="email" placeholder="your@email.com">
+      </div>
+      <button class="btn-primary" onclick="submitRegistration()">
+        <span class="ja">登録する</span><span class="en" style="display:none">Register Now</span>
+      </button>
+    </div>
+    <div class="register-success" id="register-success-view">
+      <div class="success-icon">✦</div>
+      <div class="success-title ja">登録完了</div><div class="success-title en" style="display:none">Registration Complete</div>
+      <p class="success-text ja">ご登録ありがとうございます。<br>下記のQRコードを当日ご提示ください。</p>
+      <p class="success-text en" style="display:none">Thank you. Please present the QR code below on the day of the event.</p>
+      <div class="qr-wrapper" id="qr-display"></div>
+      <p style="color:var(--gold);font-size:0.7rem;letter-spacing:0.12em;" id="reg-id-display"></p>
+    </div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="page active" id="page-dashboard">
+  <div class="dash-header">
+    <div class="dash-eyebrow ja">管理ダッシュボード</div><div class="dash-eyebrow en" style="display:none">Admin Dashboard</div>
+    <h1 class="dash-title ja">来場者 <span style="color:var(--gold);font-style:italic;font-family:'Cormorant Garamond',serif">管理</span></h1>
+    <h1 class="dash-title en" style="display:none">Guest <span style="color:var(--gold);font-style:italic;font-family:'Cormorant Garamond',serif">Management</span></h1>
+  </div>
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-label ja">登録者数</div><div class="stat-label en" style="display:none">Registered</div><div class="stat-value sv-gold" id="stat-total">0</div></div>
+    <div class="stat-card"><div class="stat-label ja">来場済み</div><div class="stat-label en" style="display:none">Arrived</div><div class="stat-value sv-gold" id="stat-arrived">0</div></div>
+    <div class="stat-card"><div class="stat-label ja" style="color:var(--free)">無料招待</div><div class="stat-label en" style="display:none;color:var(--free)">Free Invite</div><div class="stat-value sv-free" id="stat-free">0</div></div>
+    <div class="stat-card"><div class="stat-label ja" style="color:var(--paid)">事前支払済</div><div class="stat-label en" style="display:none;color:var(--paid)">Pre-paid</div><div class="stat-value sv-paid" id="stat-paid">0</div></div>
+    <div class="stat-card"><div class="stat-label ja" style="color:var(--cash)">当日払い</div><div class="stat-label en" style="display:none;color:var(--cash)">Pay on Door</div><div class="stat-value sv-cash" id="stat-cash">0</div></div>
+    <div class="stat-card"><div class="stat-label ja" style="color:var(--gold)">売上合計</div><div class="stat-label en" style="display:none;color:var(--gold)">Revenue</div><div class="stat-value sv-gold" id="stat-revenue" style="font-size:1.5rem;padding-top:8px">¥0</div></div>
+  </div>
+  <div class="pay-legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--free)"></div><span class="ja">無料招待</span><span class="en" style="display:none">Free Invite</span></div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--paid)"></div><span class="ja">事前支払済み</span><span class="en" style="display:none">Pre-paid Online</span></div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--cash)"></div><span class="ja">当日払い待ち</span><span class="en" style="display:none">Pay on Door</span></div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--unpaid)"></div><span class="ja">未払い/要確認</span><span class="en" style="display:none">Unpaid</span></div>
+  </div>
+  <div class="toolbar">
+    <div class="search-wrap"><span class="search-icon">🔍</span><input class="search-input" id="search-input" placeholder="名前 / メール検索…" oninput="filterGuests()"></div>
+    <select class="filter-select" id="filter-status" onchange="filterGuests()">
+      <option value="all">すべて / All</option>
+      <option value="arrived">来場済み</option>
+      <option value="pending">未来場</option>
+    </select>
+    <select class="filter-select" id="filter-payment" onchange="filterGuests()">
+      <option value="all">支払い: すべて</option>
+      <option value="free">無料招待</option>
+      <option value="prepaid">事前支払済</option>
+      <option value="cash">当日払い</option>
+      <option value="unpaid">未払い</option>
+    </select>
+    <select class="filter-select" id="filter-promoter" onchange="filterGuests()"><option value="all">全プロモーター</option></select>
+    <div class="toolbar-spacer"></div>
+    <button class="btn-add" onclick="openAddModal()"><span class="ja">＋ 追加</span><span class="en" style="display:none">＋ Add Guest</span></button>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>ID</th>
+        <th class="ja">氏名</th><th class="en" style="display:none">Name</th>
+        <th class="ja">プロモーター</th><th class="en" style="display:none">Promoter</th>
+        <th class="ja">支払い</th><th class="en" style="display:none">Payment</th>
+        <th class="ja">金額</th><th class="en" style="display:none">Amount</th>
+        <th class="ja">来場</th><th class="en" style="display:none">Arrival</th>
+        <th class="ja">操作</th><th class="en" style="display:none">Action</th>
+      </tr></thead>
+      <tbody id="guest-tbody"></tbody>
+    </table>
+  </div>
+  <div class="section-title ja">プロモーター <span>実績</span></div>
+  <div class="section-title en" style="display:none">Promoter <span>Performance</span></div>
+  <div class="promoter-grid" id="promoter-grid"></div>
+</div>
+
+<!-- CHECKIN -->
+<div class="page" id="page-checkin">
+  <div class="bg-glow"></div>
+  <div class="checkin-container">
+    <h1 class="checkin-title ja">入場 <em>チェックイン</em></h1>
+    <h1 class="checkin-title en" style="display:none">Guest <em>Check-in</em></h1>
+    <div class="checkin-sub ja">カメラでQRスキャン、または手動入力</div>
+    <div class="checkin-sub en" style="display:none">Scan QR with camera or enter ID manually</div>
+
+    <!-- Camera viewer -->
+    <div class="camera-wrap" id="camera-wrap">
+      <video id="qr-video" playsinline autoplay muted></video>
+      <div class="camera-overlay">
+        <div class="scan-reticle"><span></span><div class="scan-line"></div></div>
+        <div class="camera-status ja" id="cam-status-text">スキャン待機中…</div>
+        <div class="camera-status en" id="cam-status-text-en" style="display:none">Waiting for QR code…</div>
+      </div>
+    </div>
+
+    <!-- Camera toggle + flip -->
+    <div class="camera-controls">
+      <button class="btn-cam-toggle" id="btn-cam-toggle" onclick="toggleCamera()">
+        <span id="cam-btn-icon">📷</span>
+        <span class="ja" id="cam-btn-label">カメラでスキャン</span>
+        <span class="en" id="cam-btn-label-en" style="display:none">Open Camera</span>
+      </button>
+      <button class="btn-cam-flip" id="btn-cam-flip" onclick="flipCamera()" title="カメラ切替" style="display:none">🔄</button>
+    </div>
+
+    <!-- Divider -->
+    <div class="divider-or"><span class="ja">または手動入力</span><span class="en" style="display:none">or enter manually</span></div>
+
+    <input class="manual-input" id="checkin-input" placeholder="Guest ID  (例: EVT-0001)" onkeydown="if(event.key==='Enter')processCheckin()" oninput="this.value=this.value.toUpperCase()">
+    <button class="btn-scan" onclick="processCheckin()">
+      <span class="ja">チェックイン処理</span><span class="en" style="display:none">Process Check-in</span>
+    </button>
+
+    <div class="checkin-result" id="checkin-result">
+      <div class="result-card" id="result-card">
+        <div class="rc-top">
+          <div><div class="rc-status-label" id="rc-status-label"></div><div class="rc-name" id="rc-name"></div></div>
+          <div class="rc-action-icon" id="rc-icon"></div>
+        </div>
+        <div class="rc-divider"></div>
+        <div class="rc-meta" id="rc-meta"></div>
+        <div id="rc-extra"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADD MODAL -->
+<div class="modal-overlay" id="modal-add">
+  <div class="modal">
+    <div class="modal-title ja">ゲストを追加</div><div class="modal-title en" style="display:none">Add Guest</div>
+    <div class="form-group">
+      <label class="form-label ja">氏名</label><label class="form-label en" style="display:none">Full Name</label>
+      <input class="form-input" id="add-name" placeholder="山田 太郎">
+    </div>
+    <div class="form-group">
+      <label class="form-label ja">メールアドレス</label><label class="form-label en" style="display:none">Email</label>
+      <input class="form-input" id="add-email" type="email" placeholder="email@example.com">
+    </div>
+    <div class="form-group">
+      <label class="form-label ja">プロモーター</label><label class="form-label en" style="display:none">Promoter</label>
+      <select class="modal-select" id="add-promoter"></select>
+    </div>
+    <div class="form-group">
+      <label class="form-label ja">支払い種別</label><label class="form-label en" style="display:none">Payment Type</label>
+      <select class="modal-select" id="add-paytype" onchange="updateAmountField()">
+        <option value="free">無料招待 / Free Invite</option>
+        <option value="prepaid">事前支払済み / Pre-paid Online</option>
+        <option value="cash">当日払い / Pay on Door</option>
+        <option value="unpaid">未払い / Unpaid</option>
+      </select>
+    </div>
+    <div class="form-group" id="amount-group">
+      <label class="form-label ja">金額 (¥)</label><label class="form-label en" style="display:none">Amount (¥)</label>
+      <input class="form-input" id="add-amount" type="number" placeholder="3000" value="3000">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()"><span class="ja">キャンセル</span><span class="en" style="display:none">Cancel</span></button>
+      <button class="btn-confirm-modal" onclick="addGuest()"><span class="ja">追加</span><span class="en" style="display:none">Add</span></button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const PROMOTERS = [
+  { id:'p1', name:'Alex Morgan', slug:'alex-morgan' },
+  { id:'p2', name:'Yuki Tanaka', slug:'yuki-tanaka' },
+  { id:'p3', name:'Chris Levi',  slug:'chris-levi' },
+];
+let guests = [
+  { id:'EVT-0001', name:'田中 花子',     email:'hanako@example.com',  promoterId:'p1', payType:'prepaid', amount:3000, payConfirmed:true,  arrived:false, arrivedAt:null, registeredAt:'2025-03-01 14:22' },
+  { id:'EVT-0002', name:'鈴木 一郎',     email:'ichiro@example.com',  promoterId:'p1', payType:'cash',    amount:3000, payConfirmed:false, arrived:false, arrivedAt:null, registeredAt:'2025-03-01 15:08' },
+  { id:'EVT-0003', name:'Sophie Laurent',email:'sophie@example.com',  promoterId:'p2', payType:'free',    amount:0,    payConfirmed:true,  arrived:true,  arrivedAt:'2025-03-05 19:41', registeredAt:'2025-03-02 10:15' },
+  { id:'EVT-0004', name:'佐藤 健',       email:'ken@example.com',     promoterId:'p2', payType:'prepaid', amount:5000, payConfirmed:true,  arrived:true,  arrivedAt:'2025-03-05 19:55', registeredAt:'2025-03-02 18:30' },
+  { id:'EVT-0005', name:'James Park',    email:'james@example.com',   promoterId:'p3', payType:'unpaid',  amount:3000, payConfirmed:false, arrived:false, arrivedAt:null, registeredAt:'2025-03-03 09:00' },
+  { id:'EVT-0006', name:'山本 美咲',     email:'misaki@example.com',  promoterId:'p1', payType:'free',    amount:0,    payConfirmed:true,  arrived:false, arrivedAt:null, registeredAt:'2025-03-03 11:45' },
+];
+let idCounter = guests.length + 1;
+let lang = 'ja';
+
+function toggleLang() {
+  lang = lang==='ja' ? 'en' : 'ja';
+  document.querySelectorAll('.ja').forEach(el => el.style.display = lang==='ja' ? '' : 'none');
+  document.querySelectorAll('.en').forEach(el => el.style.display = lang==='en' ? '' : 'none');
+  document.getElementById('search-input').placeholder = lang==='ja' ? '名前 / メール検索…' : 'Search name / email…';
+}
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  document.getElementById('tab-'+id).classList.add('active');
+  if (id==='dashboard') renderDashboard();
+  if (id==='register')  initRegisterPage();
+}
+function nowStr() {
+  const n=new Date();
+  return n.getFullYear()+'-'+p2(n.getMonth()+1)+'-'+p2(n.getDate())+' '+p2(n.getHours())+':'+p2(n.getMinutes());
+}
+function p2(v) { return String(v).padStart(2,'0'); }
+
+function payOK(g) { return g.payType==='free' || g.payType==='prepaid' || (g.payType==='cash'&&g.payConfirmed); }
+function payLabel(g) {
+  if (g.payType==='free')    return lang==='ja' ? '無料招待' : 'Free Invite';
+  if (g.payType==='prepaid') return lang==='ja' ? '事前支払済み' : 'Pre-paid';
+  if (g.payType==='cash' && !g.payConfirmed) return lang==='ja' ? '当日払い（未収）' : 'Pay on Door';
+  if (g.payType==='cash' &&  g.payConfirmed) return lang==='ja' ? '当日払い（収済）' : 'Paid on Door';
+  return lang==='ja' ? '未払い' : 'Unpaid';
+}
+function payBadgeClass(g) {
+  if (g.payType==='free')    return 'pay-free';
+  if (g.payType==='prepaid') return 'pay-paid';
+  if (g.payType==='cash')    return 'pay-cash';
+  return 'pay-unpaid';
+}
+
+function initRegisterPage() {
+  const hash = location.hash.replace('#','');
+  const slug = hash.startsWith('invite/') ? hash.split('/')[1] : null;
+  const promoter = slug ? PROMOTERS.find(p=>p.slug===slug) : PROMOTERS[0];
+  document.getElementById('reg-promoter-name').textContent = promoter ? promoter.name : 'Unknown';
+  document.getElementById('register-form-view').style.display = '';
+  document.getElementById('register-success-view').style.display = 'none';
+  document.getElementById('qr-display').innerHTML = '';
+}
+function submitRegistration() {
+  const name=document.getElementById('reg-name').value.trim();
+  const email=document.getElementById('reg-email').value.trim();
+  if (!name||!email) { showToast(lang==='ja'?'全項目を入力してください':'Please fill in all fields'); return; }
+  const pName=document.getElementById('reg-promoter-name').textContent;
+  const pr=PROMOTERS.find(p=>p.name===pName)||PROMOTERS[0];
+  const id='EVT-'+String(idCounter).padStart(4,'0'); idCounter++;
+  guests.push({ id, name, email, promoterId:pr.id, payType:'cash', amount:3000, payConfirmed:false, arrived:false, arrivedAt:null, registeredAt:nowStr() });
+  document.getElementById('register-form-view').style.display='none';
+  document.getElementById('register-success-view').style.display='block';
+  document.getElementById('reg-id-display').textContent=id;
+  const qd=document.getElementById('qr-display'); qd.innerHTML='';
+  new QRCode(qd,{text:id,width:160,height:160,colorDark:'#000',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.H});
+  showToast(lang==='ja'?'登録が完了しました':'Registration successful!');
+}
+
+function renderDashboard() {
+  const total=guests.length, arrived=guests.filter(g=>g.arrived).length;
+  const free=guests.filter(g=>g.payType==='free').length;
+  const prepaid=guests.filter(g=>g.payType==='prepaid').length;
+  const cash=guests.filter(g=>g.payType==='cash').length;
+  const revenue=guests.filter(g=>payOK(g)&&g.arrived).reduce((s,g)=>s+g.amount,0);
+  document.getElementById('stat-total').textContent=total;
+  document.getElementById('stat-arrived').textContent=arrived;
+  document.getElementById('stat-free').textContent=free;
+  document.getElementById('stat-paid').textContent=prepaid;
+  document.getElementById('stat-cash').textContent=cash;
+  document.getElementById('stat-revenue').textContent='¥'+revenue.toLocaleString();
+  const sel=document.getElementById('filter-promoter'), cur=sel.value;
+  sel.innerHTML=`<option value="all">${lang==='ja'?'全プロモーター':'All Promoters'}</option>`;
+  PROMOTERS.forEach(p=>{const o=document.createElement('option');o.value=p.id;o.textContent=p.name;sel.appendChild(o);});
+  sel.value=cur;
+  const addSel=document.getElementById('add-promoter'); addSel.innerHTML='';
+  PROMOTERS.forEach(p=>{const o=document.createElement('option');o.value=p.id;o.textContent=p.name;addSel.appendChild(o);});
+  filterGuests(); renderPromoters();
+}
+function filterGuests() {
+  const q=document.getElementById('search-input').value.toLowerCase();
+  const st=document.getElementById('filter-status').value;
+  const pay=document.getElementById('filter-payment').value;
+  const pr=document.getElementById('filter-promoter').value;
+  const filtered=guests.filter(g=>{
+    const mQ=g.name.toLowerCase().includes(q)||g.email.toLowerCase().includes(q)||g.id.toLowerCase().includes(q);
+    const mS=st==='all'||(st==='arrived'&&g.arrived)||(st==='pending'&&!g.arrived);
+    const mP=pay==='all'||(pay==='free'&&g.payType==='free')||(pay==='prepaid'&&g.payType==='prepaid')||(pay==='cash'&&g.payType==='cash')||(pay==='unpaid'&&g.payType==='unpaid');
+    const mPr=pr==='all'||g.promoterId===pr;
+    return mQ&&mS&&mP&&mPr;
+  });
+  const tbody=document.getElementById('guest-tbody'); tbody.innerHTML='';
+  filtered.forEach(g=>{
+    const promo=PROMOTERS.find(p=>p.id===g.promoterId);
+    const amt=g.payType==='free'?'<span style="color:var(--gray)">—</span>':'¥'+g.amount.toLocaleString();
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td class="muted" style="font-family:'Cormorant Garamond',serif;color:var(--gold-dim)">${g.id}</td>
+      <td>${g.name}</td>
+      <td class="muted">${promo?promo.name:'—'}</td>
+      <td><span class="pay-badge ${payBadgeClass(g)}">${payLabel(g)}</span></td>
+      <td style="font-family:'Cormorant Garamond',serif;font-size:1rem">${amt}</td>
+      <td>${g.arrived?`<span class="badge badge-arrived">${lang==='ja'?'来場済':'Arrived'}</span>`:`<span class="badge badge-pending">${lang==='ja'?'未来場':'Pending'}</span>`}</td>
+      <td><button class="btn-checkin" ${g.arrived?'disabled':''} onclick="checkInGuest('${g.id}')">${g.arrived?(lang==='ja'?'済':'Done'):(lang==='ja'?'チェックイン':'Check in')}</button></td>`;
+    tbody.appendChild(tr);
+  });
+}
+function renderPromoters() {
+  const grid=document.getElementById('promoter-grid'); grid.innerHTML='';
+  const maxA=Math.max(...PROMOTERS.map(p=>guests.filter(g=>g.promoterId===p.id&&g.arrived).length),1);
+  PROMOTERS.forEach(p=>{
+    const invited=guests.filter(g=>g.promoterId===p.id).length;
+    const arrived=guests.filter(g=>g.promoterId===p.id&&g.arrived).length;
+    const pct=invited?Math.round(arrived/invited*100):0;
+    const rev=guests.filter(g=>g.promoterId===p.id&&payOK(g)&&g.arrived).reduce((s,g)=>s+g.amount,0);
+    const barW=Math.round(arrived/maxA*100);
+    const url=location.origin+location.pathname+'#invite/'+p.slug;
+    const card=document.createElement('div'); card.className='promoter-card';
+    card.innerHTML=`
+      <div class="promoter-name">${p.name}</div>
+      <div class="promoter-stats">
+        <div><div class="p-stat-val">${invited}</div><div class="p-stat-label">${lang==='ja'?'招待':'Invited'}</div></div>
+        <div><div class="p-stat-val">${arrived}</div><div class="p-stat-label">${lang==='ja'?'来場':'Arrived'}</div></div>
+        <div><div class="p-stat-val" style="color:var(--white)">${pct}%</div><div class="p-stat-label">${lang==='ja'?'来場率':'Rate'}</div></div>
+      </div>
+      <div class="promoter-bar"><div class="promoter-bar-fill" style="width:${barW}%"></div></div>
+      <div class="promoter-revenue">${lang==='ja'?'来場収益':'Revenue'}: <strong>¥${rev.toLocaleString()}</strong></div>
+      <div class="promoter-url"><span style="opacity:0.6;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${url}</span><button class="copy-btn" onclick="copyUrl('${url}',this)">📋</button></div>`;
+    grid.appendChild(card);
+  });
+}
+function copyUrl(url,btn) {
+  navigator.clipboard.writeText(url).then(()=>{btn.textContent='✓';setTimeout(()=>btn.textContent='📋',1500);showToast(lang==='ja'?'URLをコピーしました':'URL copied!');});
+}
+function checkInGuest(id) {
+  const g=guests.find(x=>x.id===id); if(!g||g.arrived) return;
+  if (g.payType==='cash'&&!g.payConfirmed) {
+    if (!confirm(lang==='ja'?'当日払い（¥'+g.amount.toLocaleString()+'）を受け取りましたか？':'Confirm cash received: ¥'+g.amount.toLocaleString()+'?')) return;
+    g.payConfirmed=true;
+  }
+  g.arrived=true; g.arrivedAt=nowStr(); renderDashboard();
+  showToast('✦ '+(lang==='ja'?g.name+' さんが来場しました':g.name+' has arrived'));
+}
+
+// ── CHECKIN PAGE ──
+function processCheckin() {
+  const input=document.getElementById('checkin-input').value.trim().toUpperCase();
+  const wrap=document.getElementById('checkin-result'); wrap.style.display='none';
+  if (!input) return;
+  const g=guests.find(x=>x.id===input||x.name.toLowerCase()===input.toLowerCase());
+  setTimeout(()=>{
+    wrap.style.display='block';
+    const card=document.getElementById('result-card');
+    const lbl=document.getElementById('rc-status-label');
+    const nm=document.getElementById('rc-name');
+    const ico=document.getElementById('rc-icon');
+    const meta=document.getElementById('rc-meta');
+    const extra=document.getElementById('rc-extra');
+    card.className='result-card'; lbl.className='rc-status-label'; ico.className='rc-action-icon';
+    extra.innerHTML='';
+
+    if (!g) {
+      card.classList.add('rc-error'); lbl.classList.add('cl-error');
+      lbl.textContent=lang==='ja'?'⚠ 登録なし':'⚠ Not Registered';
+      nm.textContent=input; ico.classList.add('ai-error'); ico.textContent='✕';
+      meta.innerHTML=`<div><div class="rc-meta-label">${lang==='ja'?'入力値':'Input'}</div><div class="rc-meta-value">${input}</div></div>`;
+      return;
+    }
+    const pr=PROMOTERS.find(p=>p.id===g.promoterId);
+
+    if (g.arrived) {
+      card.classList.add('rc-dup'); lbl.classList.add('cl-dup');
+      lbl.textContent=lang==='ja'?'⚠ 入場済み — 重複スキャン':'⚠ Already Checked In';
+      nm.textContent=g.name; ico.classList.add('ai-dup'); ico.textContent='⟳';
+      meta.innerHTML=`
+        <div><div class="rc-meta-label">${lang==='ja'?'入場時刻':'Arrived at'}</div><div class="rc-meta-value">${g.arrivedAt}</div></div>
+        <div><div class="rc-meta-label">${lang==='ja'?'プロモーター':'Promoter'}</div><div class="rc-meta-value">${pr?pr.name:'—'}</div></div>
+        <div><div class="rc-meta-label">${lang==='ja'?'支払い':'Payment'}</div><div class="rc-meta-value"><span class="pay-badge ${payBadgeClass(g)}">${payLabel(g)}</span></div></div>`;
+      return;
+    }
+
+    // ── FREE ──
+    if (g.payType==='free') {
+      g.arrived=true; g.arrivedAt=nowStr();
+      card.classList.add('rc-free'); lbl.classList.add('cl-free');
+      lbl.textContent=lang==='ja'?'✦ 無料招待 — 入場OK':'✦ Free Invite — Welcome!';
+      nm.textContent=g.name; ico.classList.add('ai-free'); ico.textContent='🎟';
+      meta.innerHTML=`
+        <div><div class="rc-meta-label">Email</div><div class="rc-meta-value">${g.email}</div></div>
+        <div><div class="rc-meta-label">${lang==='ja'?'招待':'Invited by'}</div><div class="rc-meta-value">${pr?pr.name:'—'}</div></div>
+        <div style="grid-column:1/-1"><div class="rc-meta-label">${lang==='ja'?'金額':'Amount'}</div><div class="rc-meta-value"><span class="amount-big amt-free">${lang==='ja'?'無料':'FREE'}</span></div></div>`;
+      document.getElementById('checkin-input').value='';
+      renderDashboard();
+
+    // ── PREPAID ──
+    } else if (g.payType==='prepaid') {
+      g.arrived=true; g.arrivedAt=nowStr();
+      card.classList.add('rc-paid'); lbl.classList.add('cl-paid');
+      lbl.textContent=lang==='ja'?'✦ 事前支払済み — 入場OK':'✦ Pre-paid — Welcome!';
+      nm.textContent=g.name; ico.classList.add('ai-paid'); ico.textContent='✔';
+      meta.innerHTML=`
+        <div><div class="rc-meta-label">Email</div><div class="rc-meta-value">${g.email}</div></div>
+        <div><div class="rc-meta-label">${lang==='ja'?'招待':'Invited by'}</div><div class="rc-meta-value">${pr?pr.name:'—'}</div></div>
+        <div style="grid-column:1/-1"><div class="rc-meta-label">${lang==='ja'?'支払い金額':'Amount Paid'}</div><div class="rc-meta-value"><span class="amount-big amt-paid">¥${g.amount.toLocaleString()}</span></div></div>`;
+      document.getElementById('checkin-input').value='';
+      renderDashboard();
+
+    // ── CASH (未収) ──
+    } else if (g.payType==='cash'&&!g.payConfirmed) {
+      card.classList.add('rc-cash'); lbl.classList.add('cl-cash');
+      lbl.textContent=lang==='ja'?'⚠ 当日払い — 料金を受け取ってください':'⚠ Pay on Door — Collect Payment';
+      nm.textContent=g.name; ico.classList.add('ai-cash'); ico.textContent='¥';
+      meta.innerHTML=`
+        <div><div class="rc-meta-label">Email</div><div class="rc-meta-value">${g.email}</div></div>
+        <div><div class="rc-meta-label">${lang==='ja'?'招待':'Invited by'}</div><div class="rc-meta-value">${pr?pr.name:'—'}</div></div>
+        <div style="grid-column:1/-1"><div class="rc-meta-label">${lang==='ja'?'受取金額':'Amount to Collect'}</div><div class="rc-meta-value"><span class="amount-big amt-cash">¥${g.amount.toLocaleString()}</span></div></div>`;
+      extra.innerHTML=`
+        <div class="rc-instruction inst-cash">
+          ${lang==='ja'?`<strong>スタッフへ：</strong> ¥${g.amount.toLocaleString()} を現金でお受け取りの上、下のボタンを押してください。`:`<strong>Staff:</strong> Collect ¥${g.amount.toLocaleString()} cash, then press the button below.`}
+        </div>
+        <button class="btn-confirm-cash" onclick="confirmCash('${g.id}')">
+          ${lang==='ja'?'💴 現金受取済み — 入場を許可する':'💴 Cash Received — Allow Entry'}
+        </button>`;
+
+    // ── UNPAID ──
+    } else {
+      card.classList.add('rc-unpaid'); lbl.classList.add('cl-unpaid');
+      lbl.textContent=lang==='ja'?'✕ 未払い — 入場不可':'✕ Unpaid — Entry Denied';
+      nm.textContent=g.name; ico.classList.add('ai-unpaid'); ico.textContent='✕';
+      meta.innerHTML=`
+        <div><div class="rc-meta-label">Email</div><div class="rc-meta-value">${g.email}</div></div>
+        <div><div class="rc-meta-label">${lang==='ja'?'招待':'Invited by'}</div><div class="rc-meta-value">${pr?pr.name:'—'}</div></div>`;
+      extra.innerHTML=`<div class="rc-instruction inst-unpaid"><strong>${lang==='ja'?'スタッフへ：':'Staff:'}</strong> ${lang==='ja'?'この方の支払いが確認できていません。管理者に確認してください。':'Payment not confirmed. Please escalate to a manager.'}</div>`;
+    }
+  },80);
+}
+
+function confirmCash(id) {
+  const g=guests.find(x=>x.id===id); if(!g) return;
+  g.payConfirmed=true; g.arrived=true; g.arrivedAt=nowStr();
+  renderDashboard();
+  showToast('✦ '+(lang==='ja'?'¥'+g.amount.toLocaleString()+' 受取済み — '+g.name+' さん入場':'Cash ¥'+g.amount.toLocaleString()+' collected — '+g.name+' entered'));
+  document.getElementById('checkin-input').value=id;
+  processCheckin();
+  document.getElementById('checkin-input').value='';
+}
+
+function openAddModal() {
+  document.getElementById('modal-add').classList.add('active');
+  document.getElementById('add-name').value='';
+  document.getElementById('add-email').value='';
+  document.getElementById('add-paytype').value='cash';
+  document.getElementById('add-amount').value='3000';
+  updateAmountField();
+}
+function closeModal() { document.getElementById('modal-add').classList.remove('active'); }
+function updateAmountField() {
+  document.getElementById('amount-group').style.display=document.getElementById('add-paytype').value==='free'?'none':'';
+}
+function addGuest() {
+  const name=document.getElementById('add-name').value.trim();
+  const email=document.getElementById('add-email').value.trim();
+  const promoterId=document.getElementById('add-promoter').value;
+  const payType=document.getElementById('add-paytype').value;
+  const amount=payType==='free'?0:parseInt(document.getElementById('add-amount').value)||0;
+  if (!name) { showToast(lang==='ja'?'名前を入力してください':'Please enter a name'); return; }
+  const id='EVT-'+String(idCounter).padStart(4,'0'); idCounter++;
+  guests.push({ id, name, email, promoterId, payType, amount, payConfirmed: payType==='prepaid'||payType==='free', arrived:false, arrivedAt:null, registeredAt:nowStr() });
+  closeModal(); renderDashboard();
+  showToast(lang==='ja'?name+' さんを追加しました':name+' added');
+}
+
+let toastTimer;
+function showToast(msg) {
+  const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+// ═══════════════════════════════════════════════
+//  CAMERA QR SCANNER
+// ═══════════════════════════════════════════════
+let cameraStream = null;
+let scanLoop = null;
+let facingMode = 'environment'; // back camera default
+let lastScanned = '';
+let lastScannedTime = 0;
+const SCAN_COOLDOWN = 3000; // 3s before same code can re-trigger
+
+async function toggleCamera() {
+  if (cameraStream) {
+    stopCamera();
+  } else {
+    await startCamera();
+  }
+}
+
+async function startCamera() {
+  const wrap   = document.getElementById('camera-wrap');
+  const toggle = document.getElementById('btn-cam-toggle');
+  const flip   = document.getElementById('btn-cam-flip');
+  const video  = document.getElementById('qr-video');
+
+  // Check BarcodeDetector support
+  if (!('BarcodeDetector' in window)) {
+    showToast(lang==='ja'
+      ? '⚠ このブラウザはカメラスキャン非対応です。手動入力をご使用ください。'
+      : '⚠ Camera scanning not supported in this browser. Please use manual input.');
+    return;
+  }
+
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode, width:{ ideal:1280 }, height:{ ideal:1280 } }
+    });
+    video.srcObject = cameraStream;
+    await video.play();
+
+    wrap.classList.add('active');
+    toggle.classList.add('active');
+    flip.style.display = '';
+    document.getElementById('cam-btn-icon').textContent = '⏹';
+    document.getElementById('cam-btn-label').textContent    = 'カメラを停止';
+    document.getElementById('cam-btn-label-en').textContent = 'Stop Camera';
+
+    // Start decode loop
+    const detector = new BarcodeDetector({ formats: ['qr_code'] });
+    scanLoop = setInterval(async () => {
+      if (video.readyState < 2) return;
+      try {
+        const codes = await detector.detect(video);
+        if (codes.length > 0) {
+          const raw = codes[0].rawValue.trim().toUpperCase();
+          const now = Date.now();
+          if (raw === lastScanned && now - lastScannedTime < SCAN_COOLDOWN) return;
+          lastScanned = raw;
+          lastScannedTime = now;
+          // Pulse feedback
+          document.getElementById('camera-wrap').style.boxShadow = '0 0 0 3px var(--gold)';
+          setTimeout(() => document.getElementById('camera-wrap').style.boxShadow = '', 400);
+          // Trigger checkin
+          document.getElementById('checkin-input').value = raw;
+          processCheckin();
+        }
+      } catch(e) { /* frame not ready */ }
+    }, 300);
+
+    updateCamStatus(lang==='ja' ? 'スキャン待機中…' : 'Waiting for QR code…');
+
+  } catch(err) {
+    cameraStream = null;
+    if (err.name === 'NotAllowedError') {
+      showToast(lang==='ja' ? '⚠ カメラへのアクセスが拒否されました' : '⚠ Camera access denied');
+    } else {
+      showToast(lang==='ja' ? '⚠ カメラを起動できませんでした' : '⚠ Could not start camera');
+    }
+  }
+}
+
+function stopCamera() {
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(t => t.stop());
+    cameraStream = null;
+  }
+  if (scanLoop) { clearInterval(scanLoop); scanLoop = null; }
+
+  const video  = document.getElementById('qr-video');
+  const wrap   = document.getElementById('camera-wrap');
+  const toggle = document.getElementById('btn-cam-toggle');
+  const flip   = document.getElementById('btn-cam-flip');
+
+  video.srcObject = null;
+  wrap.classList.remove('active');
+  toggle.classList.remove('active');
+  flip.style.display = 'none';
+  document.getElementById('cam-btn-icon').textContent = '📷';
+  document.getElementById('cam-btn-label').textContent    = 'カメラでスキャン';
+  document.getElementById('cam-btn-label-en').textContent = 'Open Camera';
+}
+
+async function flipCamera() {
+  facingMode = facingMode === 'environment' ? 'user' : 'environment';
+  stopCamera();
+  await startCamera();
+}
+
+function updateCamStatus(msg) {
+  document.getElementById('cam-status-text').textContent    = msg;
+  document.getElementById('cam-status-text-en').textContent = msg;
+}
+
+// Stop camera when leaving checkin page
+const _origShowPage = showPage;
+window.showPage = function(id) {
+  if (id !== 'checkin') stopCamera();
+  _origShowPage(id);
+};
+
+renderDashboard();
+</script>
+</body>
+</html>
