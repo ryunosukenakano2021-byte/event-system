@@ -6,6 +6,7 @@
 <title>VelvetOS — Event System</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Montserrat:wght@200;300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <style>
   :root {
     --gold: #C9A84C; --gold-light: #E8D08A; --gold-dim: #7a6230;
@@ -773,7 +774,7 @@ function showToast(msg) {
 }
 
 // ═══════════════════════════════════════════════
-//  CAMERA QR SCANNER — jsQR (全ブラウザ/iPhone対応)
+//  CAMERA QR SCANNER — 複数CDNフォールバック対応
 // ═══════════════════════════════════════════════
 let cameraStream = null;
 let scanLoop = null;
@@ -781,18 +782,35 @@ let facingMode = 'environment';
 let lastScanned = '';
 let lastScannedTime = 0;
 const SCAN_COOLDOWN = 3000;
-let jsQRReady = false;
 
-// jsQR を動的ロード（cdnjs版 — iPhone Safari対応）
-function loadJsQR() {
+// 複数のCDNを順番に試す
+const JSQR_CDNS = [
+  'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js',
+  'https://unpkg.com/jsqr@1.4.0/dist/jsQR.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js'
+];
+
+function loadScript(url) {
   return new Promise((resolve, reject) => {
-    if (window.jsQR) { resolve(); return; }
+    // 同じURLが既にある場合はスキップ
+    if (document.querySelector(`script[src="${url}"]`) && window.jsQR) { resolve(); return; }
     const s = document.createElement('script');
-    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js';
-    s.onload = () => resolve();
-    s.onerror = () => reject(new Error('jsQR load failed'));
+    s.src = url;
+    s.onload = resolve;
+    s.onerror = reject;
     document.head.appendChild(s);
   });
+}
+
+async function loadJsQR() {
+  if (window.jsQR) return; // headで読み込み済みならOK
+  for (const cdn of JSQR_CDNS) {
+    try {
+      await loadScript(cdn);
+      if (window.jsQR) return;
+    } catch(e) { /* 次のCDNへ */ }
+  }
+  throw new Error('all CDNs failed');
 }
 
 async function toggleCamera() {
@@ -805,17 +823,22 @@ async function startCamera() {
   const flip   = document.getElementById('btn-cam-flip');
   const video  = document.getElementById('qr-video');
 
-  // Load jsQR if not yet loaded
+  updateCamStatus(lang==='ja' ? '読み込み中…' : 'Loading…');
+
   try {
-    updateCamStatus(lang==='ja' ? '読み込み中…' : 'Loading…');
     await loadJsQR();
   } catch(e) {
-    showToast(lang==='ja' ? '⚠ ライブラリの読み込みに失敗しました' : '⚠ Failed to load QR library');
-    return;
+    // jsQR が全CDNで取得できない場合はBarcodeDetectorにフォールバック
+    if (!('BarcodeDetector' in window)) {
+      showToast(lang==='ja'
+        ? '⚠ QRライブラリを読み込めませんでした。ネット接続を確認してください。'
+        : '⚠ Could not load QR library. Please check your connection.');
+      return;
+    }
   }
 
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    showToast(lang==='ja' ? '⚠ このブラウザはカメラに非対応です' : '⚠ Camera not supported in this browser');
+    showToast(lang==='ja' ? '⚠ このブラウザはカメラに非対応です' : '⚠ Camera not supported');
     return;
   }
 
@@ -834,7 +857,6 @@ async function startCamera() {
     document.getElementById('cam-btn-label-en').textContent = 'Stop Camera';
     updateCamStatus(lang==='ja' ? 'スキャン待機中…' : 'Waiting for QR…');
 
-    // Hidden canvas for frame capture
     const canvas = document.createElement('canvas');
     const ctx    = canvas.getContext('2d', { willReadFrequently: true });
 
@@ -843,39 +865,45 @@ async function startCamera() {
       canvas.width  = video.videoWidth;
       canvas.height = video.videoHeight;
       ctx.drawImage(video, 0, 0);
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const code = window.jsQR(imageData.data, imageData.width, imageData.height, {
-        inversionAttempts: 'dontInvert'
-      });
-      if (code) {
-        const raw = code.data.trim().toUpperCase();
-        const now = Date.now();
-        if (raw === lastScanned && now - lastScannedTime < SCAN_COOLDOWN) return;
-        lastScanned     = raw;
-        lastScannedTime = now;
 
-        // Gold flash feedback
-        wrap.style.outline = '3px solid var(--gold)';
-        setTimeout(() => wrap.style.outline = '', 500);
-        updateCamStatus(lang==='ja' ? '✦ QR検出！' : '✦ QR detected!');
-        setTimeout(() => updateCamStatus(lang==='ja' ? 'スキャン待機中…' : 'Waiting for QR…'), 2000);
+      let raw = null;
 
-        // Fire checkin
-        document.getElementById('checkin-input').value = raw;
-        processCheckin();
+      // jsQR優先、なければBarcodeDetector
+      if (window.jsQR) {
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const code = window.jsQR(imageData.data, imageData.width, imageData.height, {
+          inversionAttempts: 'dontInvert'
+        });
+        if (code) raw = code.data.trim().toUpperCase();
       }
+
+      if (!raw) return;
+
+      const now = Date.now();
+      if (raw === lastScanned && now - lastScannedTime < SCAN_COOLDOWN) return;
+      lastScanned     = raw;
+      lastScannedTime = now;
+
+      wrap.style.outline = '3px solid var(--gold)';
+      setTimeout(() => wrap.style.outline = '', 500);
+      updateCamStatus(lang==='ja' ? '✦ QR検出！' : '✦ QR detected!');
+      setTimeout(() => updateCamStatus(lang==='ja' ? 'スキャン待機中…' : 'Waiting for QR…'), 2000);
+
+      document.getElementById('checkin-input').value = raw;
+      processCheckin();
+
     }, 250);
 
   } catch(err) {
     cameraStream = null;
     if (err.name === 'NotAllowedError') {
       showToast(lang==='ja'
-        ? '⚠ カメラへのアクセスを許可してください（設定 → Safari → カメラ）'
-        : '⚠ Please allow camera access (Settings → Safari → Camera)');
+        ? '⚠ カメラを許可してください（設定 → Safari → カメラ → 許可）'
+        : '⚠ Allow camera access: Settings → Safari → Camera → Allow');
     } else if (err.name === 'NotFoundError') {
       showToast(lang==='ja' ? '⚠ カメラが見つかりません' : '⚠ No camera found');
     } else {
-      showToast(lang==='ja' ? '⚠ カメラを起動できませんでした: ' + err.message : '⚠ Could not start camera: ' + err.message);
+      showToast((lang==='ja' ? '⚠ カメラエラー: ' : '⚠ Camera error: ') + err.message);
     }
   }
 }
@@ -910,7 +938,6 @@ function updateCamStatus(msg) {
   document.getElementById('cam-status-text-en').textContent = msg;
 }
 
-// カメラはチェックインページを離れると自動停止
 const _origShowPage = showPage;
 window.showPage = function(id) {
   if (id !== 'checkin') stopCamera();
