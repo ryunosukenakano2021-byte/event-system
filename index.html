@@ -27,7 +27,7 @@
   }
   .bg-logo img{
     width:80vmin;height:80vmin;object-fit:contain;
-    opacity:0.06;filter:grayscale(100%);
+    opacity:0.18;filter:grayscale(100%);
   }
   .bg-glow{position:fixed;inset:0;pointer-events:none;z-index:1;
     background:radial-gradient(ellipse 70% 70% at 50% 50%,rgba(8,8,8,0.3) 0%,rgba(8,8,8,0.85) 60%,rgba(8,8,8,0.97) 100%);
@@ -70,6 +70,7 @@
   .success-icon{width:64px;height:64px;border:1px solid var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 22px;font-size:1.5rem;}
   .success-title{font-family:'Noto Serif JP',serif;font-size:1.8rem;color:var(--gold);margin-bottom:8px;}
   .success-text{font-size:0.72rem;color:var(--gray);line-height:1.9;}
+  .screenshot-notice{margin-top:14px;padding:12px 16px;background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.3);color:var(--gold);font-size:0.7rem;letter-spacing:0.05em;line-height:1.6;}
   .qr-wrapper{margin:26px auto;width:fit-content;padding:18px;background:var(--white);}
   .guest-id-label{color:var(--gold);font-size:0.68rem;letter-spacing:0.12em;margin-top:6px;}
 
@@ -139,6 +140,7 @@
     <div class="success-icon">✦</div>
     <div class="success-title">登録完了</div>
     <p class="success-text">ご登録ありがとうございます。<br>下記のQRコードを当日ご提示ください。</p>
+    <div class="screenshot-notice">📸 このQRコードをスクリーンショットして保存してください</div>
     <div class="qr-wrapper" id="qr-display"></div>
     <div class="guest-id-label" id="guest-id-label"></div>
   </div>
@@ -223,17 +225,12 @@ async function submitRegistration() {
   document.getElementById('guest-id-label').textContent = data.guest_id;
   const qd = document.getElementById('qr-display'); qd.innerHTML = '';
 
-  // QRCode.jsをCDNから動的ロード
-  const s = document.createElement('script');
-  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
-  s.onload = () => {
-    new QRCode(qd, {
-      text: data.guest_id, width:160, height:160,
-      colorDark:'#000', colorLight:'#fff',
-      correctLevel: QRCode.CorrectLevel.H
-    });
-  };
-  document.head.appendChild(s);
+  // QRCode.jsはheadで読み込み済み → 直接生成
+  new QRCode(qd, {
+    text: data.guest_id, width: 160, height: 160,
+    colorDark: '#000', colorLight: '#fff',
+    correctLevel: QRCode.CorrectLevel.H
+  });
 }
 
 init();
