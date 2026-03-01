@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>API診断ツール</title>
+<style>
+body{background:#111;color:#eee;font-family:monospace;padding:20px;}
+button{background:#C9A84C;border:none;color:#000;padding:10px 20px;cursor:pointer;margin:4px;font-size:14px;}
+pre{background:#000;padding:16px;white-space:pre-wrap;word-break:break-all;font-size:12px;margin-top:10px;border:1px solid #333;}
+.ok{color:#4CAF82;} .err{color:#CF4444;}
+</style>
+</head>
+<body>
+<h2>🔧 API診断ツール</h2>
+<p style="font-size:12px;color:#888;margin-bottom:16px">このページはデバッグ用です。終わったら削除してください。</p>
+
+<button onclick="testGetEvents()">① イベント一覧を取得</button>
+<button onclick="testGetPromoter()">② プロモーター取得</button>
+<button onclick="testRegister()">③ テスト登録（ゲスト追加）</button>
+
+<pre id="out">ボタンを押してテストしてください</pre>
+
+<script>
+const API = 'https://script.google.com/macros/s/AKfycbzqNk2YEdEhwto3K84_w5O4Fpmb77oem29cpyN_4J-em8c9SRaDe9fvThIMM8kFO8g/exec';
+
+async function apiGet(p) {
+  const r = await fetch(API + '?' + new URLSearchParams(p));
+  return r.json();
+}
+async function apiPost(b) {
+  const r = await fetch(API, {method:'POST', body:JSON.stringify(b)});
+  return r.json();
+}
+
+function log(data) {
+  const pre = document.getElementById('out');
+  const txt = JSON.stringify(data, null, 2);
+  pre.innerHTML = txt;
+  pre.className = data.ok ? 'ok' : 'err';
+}
+
+async function testGetEvents() {
+  log({status:'通信中...'});
+  try {
+    const d = await apiGet({action:'getEvents'});
+    log(d);
+  } catch(e) {
+    log({ok:false, error: e.message});
+  }
+}
+
+async function testGetPromoter() {
+  const slug = prompt('プロモーターのslugを入力してください\n(例: P-MM70QCV7)', '');
+  if (!slug) return;
+  log({status:'通信中...'});
+  try {
+    const d = await apiGet({action:'getPromoterBySlug', slug});
+    log(d);
+  } catch(e) {
+    log({ok:false, error: e.message});
+  }
+}
+
+async function testRegister() {
+  const eventId = prompt('event_idを入力してください\n(例: EV-MM70PGL2)', '');
+  const promoterId = prompt('promoter_idを入力してください\n(例: P-MM70QCV7)', '');
+  if (!eventId || !promoterId) return;
+  log({status:'通信中...'});
+  try {
+    const d = await apiPost({
+      action: 'registerGuest',
+      event_id: eventId,
+      name: 'テスト太郎',
+      email: 'test@test.com',
+      gender: 'male',
+      promoter_id: promoterId
+    });
+    log(d);
+  } catch(e) {
+    log({ok:false, error: e.message});
+  }
+}
+</script>
+</body>
+</html>
