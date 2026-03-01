@@ -5,11 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Event Registration</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Montserrat:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
   :root {
-    --gold:#C9A84C; --gold-light:#E8D08A; --gold-dim:#7a6230;
-    --black:#080808; --dark:#111111; --dark2:#191919;
-    --white:#F5F0E8; --gray:#888880;
+    --gold:#C9A84C;--gold-light:#E8D08A;--gold-dim:#7a6230;
+    --black:#080808;--dark:#111111;--dark2:#191919;
+    --white:#F5F0E8;--gray:#888880;
   }
   *{margin:0;padding:0;box-sizing:border-box;}
   body{background:var(--black);color:var(--white);font-family:'Montserrat',sans-serif;font-weight:300;min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;}
@@ -24,18 +25,23 @@
   .promoter-badge-label{font-size:0.55rem;letter-spacing:0.25em;color:var(--gray);text-transform:uppercase;}
   .promoter-badge-name{font-size:0.8rem;color:var(--gold);letter-spacing:0.1em;}
   .sep{color:rgba(201,168,76,0.3);}
-
-  /* Event selector */
-  .event-selector{margin-bottom:32px;}
-  .form-label{display:block;font-size:0.6rem;letter-spacing:0.25em;color:var(--gray);text-transform:uppercase;margin-bottom:10px;}
-  .form-select{width:100%;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.15);padding:12px 0;color:var(--white);font-family:'Montserrat',sans-serif;font-size:0.9rem;font-weight:300;outline:none;cursor:pointer;letter-spacing:0.05em;}
-  .form-select option{background:var(--dark2);color:var(--white);}
-  .form-select:focus{border-bottom-color:var(--gold);}
   .form-group{margin-bottom:28px;}
+  .form-label{display:block;font-size:0.6rem;letter-spacing:0.25em;color:var(--gray);text-transform:uppercase;margin-bottom:10px;}
   .form-input{width:100%;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.12);padding:12px 0;color:var(--white);font-family:'Montserrat',sans-serif;font-size:0.9rem;font-weight:300;outline:none;transition:border-color 0.3s;letter-spacing:0.05em;}
   .form-input::placeholder{color:rgba(255,255,255,0.2);}
   .form-input:focus{border-bottom-color:var(--gold);}
-  .btn{width:100%;margin-top:16px;background:var(--gold);border:none;cursor:pointer;padding:18px;color:var(--black);font-family:'Montserrat',sans-serif;font-size:0.65rem;font-weight:600;letter-spacing:0.3em;text-transform:uppercase;transition:all 0.3s;position:relative;overflow:hidden;}
+  .form-select{width:100%;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.15);padding:12px 0;color:var(--white);font-family:'Montserrat',sans-serif;font-size:0.9rem;font-weight:300;outline:none;cursor:pointer;letter-spacing:0.05em;}
+  .form-select option{background:var(--dark2);color:var(--white);}
+  .form-select:focus{border-bottom-color:var(--gold);}
+
+  /* Gender toggle */
+  .gender-toggle{display:flex;gap:0;margin-top:4px;}
+  .gender-btn{flex:1;background:transparent;border:1px solid rgba(255,255,255,0.12);padding:12px;color:var(--gray);font-family:'Montserrat',sans-serif;font-size:0.7rem;letter-spacing:0.18em;text-transform:uppercase;cursor:pointer;transition:all 0.3s;text-align:center;}
+  .gender-btn:first-child{border-right:none;}
+  .gender-btn.selected{background:rgba(201,168,76,0.1);border-color:var(--gold);color:var(--gold);}
+  .gender-btn:hover:not(.selected){border-color:rgba(255,255,255,0.3);color:var(--white);}
+
+  .btn{width:100%;margin-top:20px;background:var(--gold);border:none;cursor:pointer;padding:18px;color:var(--black);font-family:'Montserrat',sans-serif;font-size:0.65rem;font-weight:600;letter-spacing:0.3em;text-transform:uppercase;transition:all 0.3s;position:relative;overflow:hidden;}
   .btn::before{content:'';position:absolute;inset:0;background:var(--gold-light);transform:translateX(-100%);transition:transform 0.4s;}
   .btn:hover::before{transform:translateX(0);}
   .btn span{position:relative;z-index:1;}
@@ -49,28 +55,40 @@
   .qr-wrapper{margin:28px auto;width:fit-content;padding:20px;background:var(--white);}
   .guest-id-label{color:var(--gold);font-size:0.7rem;letter-spacing:0.12em;margin-top:8px;}
 
-  /* Loading / Error */
-  .loading{text-align:center;padding:40px;color:var(--gray);font-size:0.75rem;letter-spacing:0.1em;}
-  .error-box{background:rgba(207,68,68,0.08);border:1px solid rgba(207,68,68,0.3);padding:14px 18px;font-size:0.72rem;color:#CF4444;margin-bottom:20px;display:none;}
+  /* Error */
+  .error-box{background:rgba(207,68,68,0.08);border:1px solid rgba(207,68,68,0.3);padding:14px 18px;font-size:0.72rem;color:#CF4444;margin-bottom:20px;display:none;line-height:1.6;}
+
+  /* Loading / Not found */
+  .loading{text-align:center;padding:60px 0;color:var(--gray);font-size:0.75rem;letter-spacing:0.1em;}
+  .not-found{text-align:center;padding:60px 0;}
+  .not-found-title{font-family:'Cormorant Garamond',serif;font-size:1.8rem;color:var(--gray);margin-bottom:12px;}
+  .not-found-text{font-size:0.7rem;color:var(--gray);letter-spacing:0.05em;line-height:1.8;}
 
   @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
   @media(max-width:600px){.container{padding:40px 24px;}}
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
 <div class="bg-glow"></div>
 <div class="bg-lines"></div>
 
-<div class="container" id="main-container">
-  <div id="loading-view" class="loading">読み込み中…</div>
+<div class="container">
+  <!-- Loading -->
+  <div id="view-loading" class="loading">読み込み中…</div>
 
-  <div id="form-view" style="display:none">
+  <!-- Not found (URLが不正な場合) -->
+  <div id="view-notfound" style="display:none" class="not-found">
+    <div class="not-found-title">招待リンクが無効です</div>
+    <div class="not-found-text">プロモーターから受け取ったリンクをご確認ください。</div>
+  </div>
+
+  <!-- Registration form -->
+  <div id="view-form" style="display:none">
     <div class="eyebrow">招待状 / Invitation</div>
     <h1 class="title">特別な夜へ、<br><em>ようこそ</em></h1>
     <div class="subtitle">事前来場登録 / Pre-Event Registration</div>
 
-    <div class="promoter-badge" id="promoter-badge" style="display:none">
+    <div class="promoter-badge">
       <span class="promoter-badge-label">Invited by</span>
       <span class="sep">|</span>
       <span class="promoter-badge-name" id="promoter-name-display">—</span>
@@ -78,19 +96,22 @@
 
     <div class="error-box" id="error-box"></div>
 
-    <!-- イベント選択（プロモーターURLでない場合のみ表示） -->
-    <div class="event-selector" id="event-selector" style="display:none">
-      <label class="form-label">イベントを選択 / Select Event</label>
-      <select class="form-select" id="event-select"></select>
-    </div>
-
     <div class="form-group">
       <label class="form-label">お名前 / Full Name</label>
       <input class="form-input" id="inp-name" type="text" placeholder="山田 太郎" autocomplete="off">
     </div>
+
     <div class="form-group">
       <label class="form-label">メールアドレス / Email</label>
       <input class="form-input" id="inp-email" type="email" placeholder="your@email.com">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">性別 / Gender</label>
+      <div class="gender-toggle">
+        <div class="gender-btn selected" id="btn-male" onclick="selectGender('male')">男性 / Male</div>
+        <div class="gender-btn" id="btn-female" onclick="selectGender('female')">女性 / Female</div>
+      </div>
     </div>
 
     <button class="btn" id="btn-register" onclick="submitRegistration()">
@@ -98,7 +119,8 @@
     </button>
   </div>
 
-  <div class="success-view" id="success-view">
+  <!-- Success -->
+  <div id="view-success" class="success-view">
     <div class="success-icon">✦</div>
     <div class="success-title">登録完了</div>
     <p class="success-text">ご登録ありがとうございます。<br>下記のQRコードを当日ご提示ください。</p>
@@ -111,16 +133,21 @@
 const API = 'https://script.google.com/macros/s/AKfycbzqNk2YEdEhwto3K84_w5O4Fpmb77oem29cpyN_4J-em8c9SRaDe9fvThIMM8kFO8g/exec';
 
 let currentPromoter = null;
-let currentEventId  = null;
+let selectedGender  = 'male';
 
 async function apiGet(params) {
-  const q = new URLSearchParams(params).toString();
-  const r = await fetch(API + '?' + q);
+  const r = await fetch(API + '?' + new URLSearchParams(params).toString());
   return r.json();
 }
 async function apiPost(body) {
   const r = await fetch(API, { method:'POST', body: JSON.stringify(body) });
   return r.json();
+}
+
+function show(id) {
+  ['view-loading','view-notfound','view-form','view-success'].forEach(v => {
+    document.getElementById(v).style.display = v === id ? '' : 'none';
+  });
 }
 
 function showError(msg) {
@@ -129,76 +156,76 @@ function showError(msg) {
 }
 function hideError() { document.getElementById('error-box').style.display = 'none'; }
 
+function selectGender(g) {
+  selectedGender = g;
+  document.getElementById('btn-male').classList.toggle('selected', g === 'male');
+  document.getElementById('btn-female').classList.toggle('selected', g === 'female');
+}
+
 async function init() {
-  // URLからプロモーターslugとevent_idを取得
-  const params = new URLSearchParams(location.search);
+  // URLパラメータ ?p=slug&e=event_id
+  const params  = new URLSearchParams(location.search);
   const slug    = params.get('p') || '';
   const eventId = params.get('e') || '';
 
-  if (slug) {
-    // プロモーター専用URL
-    const data = await apiGet({ action:'getPromoterBySlug', slug, event_id: eventId });
-    if (data.ok) {
-      currentPromoter = data.promoter;
-      currentEventId  = data.promoter.event_id;
-      document.getElementById('promoter-name-display').textContent = data.promoter.name;
-      document.getElementById('promoter-badge').style.display = 'inline-flex';
-    } else {
-      showError('招待リンクが無効です。プロモーターにご確認ください。');
-    }
-  } else {
-    // 一般URL — イベント選択を表示
-    const data = await apiGet({ action:'getEvents' });
-    if (data.ok && data.events.length > 0) {
-      const sel = document.getElementById('event-select');
-      data.events.filter(e => e.status === 'active').forEach(ev => {
-        const o = document.createElement('option');
-        o.value = ev.event_id; o.textContent = ev.name + ' — ' + ev.date;
-        sel.appendChild(o);
-      });
-      currentEventId = sel.value;
-      sel.addEventListener('change', () => { currentEventId = sel.value; });
-      document.getElementById('event-selector').style.display = '';
-    }
+  // slug が無い = 直接アクセス → 無効ページ表示
+  if (!slug) {
+    show('view-notfound');
+    return;
   }
 
-  document.getElementById('loading-view').style.display = 'none';
-  document.getElementById('form-view').style.display = '';
+  // プロモーター情報を取得
+  const data = await apiGet({ action:'getPromoterBySlug', slug, event_id: eventId });
+
+  if (!data.ok) {
+    show('view-notfound');
+    return;
+  }
+
+  currentPromoter = data.promoter;
+  document.getElementById('promoter-name-display').textContent = data.promoter.name;
+  show('view-form');
 }
 
 async function submitRegistration() {
   hideError();
   const name  = document.getElementById('inp-name').value.trim();
   const email = document.getElementById('inp-email').value.trim();
+
   if (!name)  { showError('お名前を入力してください'); return; }
   if (!email) { showError('メールアドレスを入力してください'); return; }
-  if (!currentEventId) { showError('イベントを選択してください'); return; }
 
   const btn = document.getElementById('btn-register');
   btn.disabled = true;
   btn.querySelector('span').textContent = '送信中…';
 
   const data = await apiPost({
-    action:       'registerGuest',
-    event_id:     currentEventId,
+    action:      'registerGuest',
+    event_id:    currentPromoter.event_id,
     name,
     email,
-    promoter_id:  currentPromoter ? currentPromoter.promoter_id : ''
+    gender:      selectedGender,
+    promoter_id: currentPromoter.promoter_id
   });
 
   if (!data.ok) {
-    showError(data.message || '登録に失敗しました');
+    showError(data.message || '登録に失敗しました。もう一度お試しください。');
     btn.disabled = false;
     btn.querySelector('span').textContent = '登録する / Register';
     return;
   }
 
-  // QR生成
-  document.getElementById('form-view').style.display = 'none';
-  document.getElementById('success-view').style.display = 'block';
+  // 成功 → QR表示
+  show('view-success');
   document.getElementById('guest-id-label').textContent = data.guest_id;
-  const qd = document.getElementById('qr-display'); qd.innerHTML = '';
-  new QRCode(qd, { text: data.guest_id, width:160, height:160, colorDark:'#000', colorLight:'#fff', correctLevel: QRCode.CorrectLevel.H });
+  const qd = document.getElementById('qr-display');
+  qd.innerHTML = '';
+  new QRCode(qd, {
+    text: data.guest_id,
+    width: 160, height: 160,
+    colorDark:'#000', colorLight:'#fff',
+    correctLevel: QRCode.CorrectLevel.H
+  });
 }
 
 init();
