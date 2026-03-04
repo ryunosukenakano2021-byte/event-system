@@ -34,16 +34,13 @@ body{background:var(--black);color:var(--white);font-family:'Noto Sans JP',sans-
 .sbtn:hover{background:var(--gold-light);}
 .sbtn:disabled{opacity:0.5;cursor:not-allowed;}
 .eb{background:rgba(207,68,68,0.08);border:1px solid rgba(207,68,68,0.3);padding:13px 16px;font-size:0.7rem;color:#CF4444;margin-bottom:18px;display:none;}
-/* success */
 .sv{display:none;text-align:center;padding:20px 0;}
 .si{width:56px;height:56px;border:1px solid var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;font-size:1.4rem;}
 .st{font-family:'Noto Serif JP',serif;font-size:1.8rem;color:var(--gold);margin-bottom:8px;}
 .ss{font-size:0.72rem;color:var(--gray);line-height:1.9;margin-bottom:16px;}
 .sn{padding:12px 16px;background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.35);color:var(--gold);font-size:0.72rem;margin-bottom:20px;}
-.qw{margin:0 auto 8px;background:#fff;padding:12px;display:inline-block;line-height:0;}
-.qw img{display:block;width:180px;height:180px;}
+.qw{margin:0 auto 8px;background:#fff;padding:8px;display:inline-block;line-height:0;}
 .gidl{color:var(--gold-dim);font-size:0.62rem;letter-spacing:0.12em;margin-top:8px;}
-/* loading / nf */
 .ld{text-align:center;padding:60px 0;color:var(--gray);font-size:0.72rem;}
 .nf{display:none;text-align:center;padding:60px 0;}
 </style>
@@ -79,11 +76,163 @@ body{background:var(--black);color:var(--white);font-family:'Noto Sans JP',sans-
     <div class="st">登録完了</div>
     <p class="ss">ご登録ありがとうございます。<br>下記のQRコードを当日ご提示ください。</p>
     <div class="sn">📸 このQRコードをスクリーンショットして保存してください</div>
-    <div class="qw"><img id="qi" src="" alt="QR Code"></div>
+    <div class="qw"><canvas id="qrc"></canvas></div>
     <div class="gidl" id="gl"></div>
   </div>
 </div>
 <script>
+
+/* ── Minimal QR encoder (pure JS, ECC=H, mask=0) ── */
+function makeQR(text){
+  // GF(256) setup
+  var EXP=new Uint8Array(512),LOG=new Uint8Array(256);
+  (function(){var x=1;for(var i=0;i<255;i++){EXP[i]=EXP[i+255]=x;LOG[x]=i;x<<=1;if(x>255)x^=0x11d;}})();
+  function mul(a,b){return a&&b?EXP[LOG[a]+LOG[b]]:0;}
+  function rsGen(n){var g=[1];for(var i=0;i<n;i++){var t=[1,EXP[i]],r=new Array(g.length+1).fill(0);for(var a=0;a<g.length;a++)for(var b=0;b<t.length;b++)r[a+b]^=mul(g[a],t[b]);g=r;}return g;}
+  function rsEnc(data,n){var g=rsGen(n),res=data.concat(new Array(n).fill(0));for(var i=0;i<data.length;i++){var c=res[i];if(c)for(var j=0;j<g.length;j++)res[i+j]^=mul(g[j],c);}return res.slice(data.length);}
+
+  // Version selection for ECC=H
+  // (version, totalDC, ecPerBlock, blocks)
+  var VTBL=[
+    [1,9,17,[[1,9]]],
+    [2,16,28,[[1,16]]],
+    [3,26,44,[[2,13]]],
+    [4,36,64,[[4,9]]],
+    [5,46,86,[[2,11],[2,12]]],
+    [6,60,108,[[4,15]]],
+    [7,66,124,[[4,19]]],  // adjusted
+    [8,86,154,[[4,22],[2,23]]],
+  ];
+  var bytes=[];for(var i=0;i<text.length;i++)bytes.push(text.charCodeAt(i)&0xff);
+  var ver=null;
+  for(var vi=0;vi<VTBL.length;vi++){
+    if(bytes.length<=VTBL[vi][1]){ver=VTBL[vi];break;}
+  }
+  if(!ver)return null;
+  var V=ver[0],totalDC=ver[1],ecPerBlock=ver[2],blockDef=ver[3];
+
+  // Build data bits
+  var bits='0100';
+  var lenBits=V<10?8:16;
+  bits+=('00000000'+bytes.length.toString(2)).slice(-lenBits);
+  for(var i=0;i<bytes.length;i++)bits+=('00000000'+bytes[i].toString(2)).slice(-8);
+  bits+='0000';
+  while(bits.length%8)bits+='0';
+  var maxBits=totalDC*8;
+  var PAD=['11101100','00010001'];var pi=0;
+  while(bits.length<maxBits)bits+=PAD[pi++%2];
+
+  // Codewords
+  var cw=[];for(var i=0;i<bits.length;i+=8)cw.push(parseInt(bits.slice(i,i+8),2));
+
+  // Build blocks
+  var blocks=[],idx=0;
+  // total ec codewords
+  var totalEC=0;blockDef.forEach(function(b){totalEC+=b[0]*ecPerBlock;});
+  var nsym=ecPerBlock;
+  blockDef.forEach(function(bd){
+    for(var bi=0;bi<bd[0];bi++){
+      var dc=cw.slice(idx,idx+bd[1]);idx+=bd[1];
+      blocks.push({dc:dc,ec:rsEnc(dc,nsym)});
+    }
+  });
+
+  // Interleave
+  var final=[];
+  var mxDC=Math.max.apply(null,blocks.map(function(b){return b.dc.length;}));
+  for(var i=0;i<mxDC;i++)blocks.forEach(function(b){if(i<b.dc.length)final.push(b.dc[i]);});
+  blocks.forEach(function(b){b.ec.forEach(function(v){final.push(v);});});
+
+  var stream='';final.forEach(function(v){stream+=('00000000'+v.toString(2)).slice(-8);});
+  // remainder bits
+  var REM=[0,7,7,7,7,7,0,0,0,0,0,0,0];
+  for(var i=0;i<(REM[V-1]||0);i++)stream+='0';
+
+  // Matrix
+  var N=V*4+17;
+  var mat=[],res=[];
+  for(var i=0;i<N;i++){mat.push(new Int8Array(N).fill(-1));res.push(new Uint8Array(N));}
+  function set(r,c,v){mat[r][c]=v?1:0;res[r][c]=1;}
+
+  // Finder
+  function finder(tr,tc){
+    for(var dr=-1;dr<=7;dr++)for(var dc=-1;dc<=7;dc++){
+      var r=tr+dr,c=tc+dc;if(r<0||r>=N||c<0||c>=N)continue;
+      var v=(dr<0||dr>6||dc<0||dc>6)?0:(dr===0||dr===6||dc===0||dc===6)?1:(dr>=2&&dr<=4&&dc>=2&&dc<=4)?1:0;
+      set(r,c,v);
+    }
+  }
+  finder(0,0);finder(0,N-7);finder(N-7,0);
+
+  // Timing
+  for(var i=6;i<N-6;i++){set(6,i,i%2===0);set(i,6,i%2===0);}
+
+  // Dark module
+  set(4*V+9,8,1);
+
+  // Format reserve
+  for(var i=0;i<=8;i++){if(!res[8][i])res[8][i]=1;if(!res[i][8])res[i][8]=1;}
+  for(var i=N-7;i<N;i++){res[8][i]=1;res[i][8]=1;}
+
+  // Alignment patterns
+  var AP={2:[6,18],3:[6,22],4:[6,26],5:[6,30],6:[6,34],7:[6,22,38],8:[6,24,42]};
+  var ap=AP[V]||[];
+  for(var ai=0;ai<ap.length;ai++)for(var aj=0;aj<ap.length;aj++){
+    var ar=ap[ai],ac=ap[aj];if(res[ar][ac])continue;
+    for(var dr=-2;dr<=2;dr++)for(var dc=-2;dc<=2;dc++){
+      set(ar+dr,ac+dc,Math.abs(dr)===2||Math.abs(dc)===2||(!dr&&!dc)?1:0);
+    }
+  }
+
+  // Place data
+  var bit=0,col=N-1;
+  while(col>0){
+    if(col===6)col--;
+    for(var row=0;row<N;row++){
+      for(var d=0;d<2;d++){
+        var c=col-d,r=(Math.floor((N-1-col)/2)%2===0)?row:N-1-row;
+        if(res[r][c])continue;
+        mat[r][c]=(bit<stream.length&&stream[bit]==='1')?1:0;
+        bit++;
+      }
+    }
+    col-=2;
+  }
+
+  // Mask 0: (r+c)%2===0
+  for(var r=0;r<N;r++)for(var c=0;c<N;c++){
+    if(!res[r][c]&&(r+c)%2===0)mat[r][c]^=1;
+  }
+
+  // Format string: ECC=H(2), mask=0 → 100000011001110 XOR 101010000010010 = 001010011011100
+  var FMT='001010011011100';
+  var fi=0;
+  for(var i=0;i<=5;i++)mat[8][i]=parseInt(FMT[fi++]);
+  mat[8][7]=parseInt(FMT[fi++]);mat[8][8]=parseInt(FMT[fi++]);mat[7][8]=parseInt(FMT[fi++]);
+  for(var i=5;i>=0;i--)mat[i][8]=parseInt(FMT[fi++]);
+  fi=0;
+  for(var i=N-1;i>=N-7;i--)mat[8][i]=parseInt(FMT[fi++]);
+  for(var i=N-8;i<N;i++)mat[i][8]=parseInt(FMT[fi++]);
+
+  return {mat:mat,size:N};
+}
+
+function drawQR(canvasId, text){
+  var qr=makeQR(text);
+  if(!qr){console.error('QR failed for: '+text);return false;}
+  var canvas=document.getElementById(canvasId);
+  var N=qr.size, cell=6, pad=4;
+  var total=(N+pad*2)*cell;
+  canvas.width=canvas.height=total;
+  var ctx=canvas.getContext('2d');
+  ctx.fillStyle='#ffffff';ctx.fillRect(0,0,total,total);
+  ctx.fillStyle='#000000';
+  for(var r=0;r<N;r++)for(var c=0;c<N;c++){
+    if(qr.mat[r][c]===1)ctx.fillRect((c+pad)*cell,(r+pad)*cell,cell,cell);
+  }
+  return true;
+}
+
 var API='https://script.google.com/macros/s/AKfycbzqNk2YEdEhwto3K84_w5O4Fpmb77oem29cpyN_4J-em8c9SRaDe9fvThIMM8kFO8g/exec';
 var promo=null,sex='male';
 
@@ -91,32 +240,18 @@ function show(id){['ld','nf','fm','ok'].forEach(function(v){document.getElementB
 function sg(g){sex=g;document.getElementById('gm').className='gb'+(g==='male'?' on':'');document.getElementById('gf').className='gb'+(g==='female'?' on':'');}
 function serr(m){var b=document.getElementById('eb');b.textContent=m;b.style.display='block';}
 
-// GET via fetch with proper CORS handling for Apps Script
 function apiFetch(params,cb){
   var url=API+'?'+Object.keys(params).map(function(k){return encodeURIComponent(k)+'='+encodeURIComponent(params[k]);}).join('&');
-  fetch(url)
-    .then(function(r){return r.json();})
-    .then(function(d){cb(null,d);})
-    .catch(function(e){cb(e.message);});
+  fetch(url).then(function(r){return r.json();}).then(function(d){cb(null,d);}).catch(function(e){cb(e.message);});
 }
-
-// POST via fetch - Apps Script requires content-type text/plain to avoid CORS preflight
 function apiPost(data,cb){
-  fetch(API,{
-    method:'POST',
-    headers:{'Content-Type':'text/plain;charset=utf-8'},
-    body:JSON.stringify(data)
-  })
-  .then(function(r){return r.json();})
-  .then(function(d){cb(null,d);})
-  .catch(function(e){cb(e.message);});
+  fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(data)})
+  .then(function(r){return r.json();}).then(function(d){cb(null,d);}).catch(function(e){cb(e.message);});
 }
 
-// INIT
 (function(){
   var p=new URLSearchParams(location.search);
-  var slug=p.get('p')||'';
-  var eid=p.get('e')||'';
+  var slug=p.get('p')||'',eid=p.get('e')||'';
   if(!slug){show('nf');return;}
   apiFetch({action:'getPromoterBySlug',slug:slug,event_id:eid},function(e,d){
     if(e||!d||!d.ok){show('nf');return;}
@@ -126,7 +261,6 @@ function apiPost(data,cb){
   });
 })();
 
-// REGISTER
 function reg(){
   document.getElementById('eb').style.display='none';
   var name=document.getElementById('nm').value.trim();
@@ -135,21 +269,20 @@ function reg(){
   if(!mail){serr('メールアドレスを入力してください');return;}
   var btn=document.getElementById('sb');
   btn.disabled=true;btn.textContent='送信中…';
-
-  apiPost({
-    action:'registerGuest',
-    event_id:promo.event_id,
-    name:name,email:mail,gender:sex,
-    promoter_id:promo.promoter_id
-  },function(e,d){
+  apiPost({action:'registerGuest',event_id:promo.event_id,name:name,email:mail,gender:sex,promoter_id:promo.promoter_id},
+  function(e,d){
     if(e||!d||!d.ok){
       serr((d&&d.message)||'登録できませんでした: '+(e||''));
-      btn.disabled=false;btn.textContent='登録する';
-      return;
+      btn.disabled=false;btn.textContent='登録する';return;
     }
     var gid=d.guest_id;
     document.getElementById('gl').textContent=gid;
-    document.getElementById('qi').src='https://api.qrserver.com/v1/create-qr-code/?size=180x180&ecc=H&data='+encodeURIComponent(gid);
+    // 純JS QRコード生成（外部依存ゼロ）
+    var ok=drawQR('qrc',gid);
+    if(!ok){
+      // フォールバック: テキスト表示
+      document.querySelector('.qw').innerHTML='<div style="width:160px;height:160px;background:#fff;color:#000;display:flex;align-items:center;justify-content:center;font-size:10px;padding:8px;text-align:center;word-break:break-all;">'+gid+'</div>';
+    }
     show('ok');
   });
 }
