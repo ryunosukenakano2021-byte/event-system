@@ -404,6 +404,11 @@ async function doLogin() {
     document.getElementById('login-screen').style.display='none';
     document.getElementById('app').style.display='block';
     await loadEvents();
+    // ★ ゲスト・プロモーターデータをバックグラウンドで先読み（楽観的UI用）
+    if(currentEventId){
+      loadGuests(true).catch(()=>{});
+      loadPromoters().catch(()=>{});
+    }
   } else {
     document.getElementById('login-error').style.display='block';
   }
@@ -454,7 +459,10 @@ function renderEventCards() {
 function setActiveEvent(id, name) {
   currentEventId=id; currentEventName=name;
   document.getElementById('nav-event-label').textContent=name;
-  loadGuests(); loadPromoters(); renderEventCards();
+  // ★ バックグラウンドで即座に先読み開始
+  loadGuests(true).catch(()=>{});
+  loadPromoters().catch(()=>{});
+  renderEventCards();
   toast('✦ '+name+' を選択しました');
 }
 
@@ -731,10 +739,10 @@ async function processCheckin(){
     return;
   }
 
-  // ローカルにない場合のみAPI待機
+  // ローカルにない場合: 即座に「照会中」表示 → バックグラウンドAPI
+  showResultSearching(input);
   checkinBusy=true;
   const btn=document.getElementById('btn-process');
-  btn.innerHTML='<span class="spinner"></span>処理中…';
   btn.disabled=true;
   try{
     const data=await apiPost({action:'checkIn',guest_id:input});
@@ -742,9 +750,24 @@ async function processCheckin(){
     if(data.ok) applyCheckinLocally(input,{pay_confirmed:'TRUE'});
   }finally{
     checkinBusy=false;
-    btn.innerHTML='チェックイン処理';
     btn.disabled=false;
+    btn.innerHTML='チェックイン処理';
   }
+}
+
+// ★ ローカルにないゲストの照会中表示（即座に表示）
+function showResultSearching(input){
+  document.getElementById('result-placeholder').style.display='none';
+  const card=document.getElementById('result-card');
+  card.className='result-card rc-dup';
+  card.style.display='block';
+  document.getElementById('rc-status').style.color='var(--gold)';
+  document.getElementById('rc-status').textContent='照会中…';
+  document.getElementById('rc-name').textContent=input;
+  document.getElementById('rc-icon').className='rc-icon ai-dup';
+  document.getElementById('rc-icon').textContent='⟳';
+  document.getElementById('rc-meta').innerHTML='<div><div class="rc-meta-label">ステータス</div><div class="rc-meta-value">サーバー確認中…</div></div>';
+  document.getElementById('rc-extra').innerHTML='';
 }
 
 function showResult(data,input){
