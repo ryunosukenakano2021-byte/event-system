@@ -665,8 +665,10 @@ async function startCamera(){
       if(checkinBusy) return; // ★ 処理中はスキャンをスキップ
       const v=document.getElementById('qr-video');
       if(v.readyState<2||v.videoWidth===0)return;
-      canvas.width=v.videoWidth;canvas.height=v.videoHeight;
-      ctx.drawImage(v,0,0);
+      // ★ 400pxにダウンスケール → jsQR処理が約10倍速くなる
+      const scale=Math.min(1,400/Math.max(v.videoWidth,v.videoHeight));
+      canvas.width=Math.round(v.videoWidth*scale);canvas.height=Math.round(v.videoHeight*scale);
+      ctx.drawImage(v,0,0,canvas.width,canvas.height);
       const d=ctx.getImageData(0,0,canvas.width,canvas.height);
       const c=window.jsQR(d.data,d.width,d.height,{inversionAttempts:'dontInvert'});
       if(c){
@@ -701,6 +703,35 @@ async function flipCamera(){ facingMode=facingMode==='environment'?'user':'envir
 async function processCheckin(){
   const input=document.getElementById('ci-input').value.trim().toUpperCase();
   if(!input||checkinBusy)return;
+
+  // ★ 楽観的UI: ローカルにゲストがいれば即座に結果を表示
+  const localGuest=allGuests.find(g=>g.guest_id===input);
+  if(localGuest){
+    const alreadyArrived=String(localGuest.arrived).toUpperCase()==='TRUE';
+    if(alreadyArrived){
+      // 重複スキャン → 即座に表示
+      showResult({status:'duplicate',name:localGuest.name},input);
+      document.getElementById('ci-input').value='';
+      checkinBusy=false;
+      return;
+    }
+    if(localGuest.pay_type==='paid'&&String(localGuest.pay_confirmed).toUpperCase()!=='TRUE'){
+      // 現金徴収が必要 → 即座に表示（APIで確定は別途）
+      showResult({status:'cash_required',name:localGuest.name,gender:localGuest.gender,amount:localGuest.amount},input);
+      // バックグラウンドでAPIに通知
+      apiPost({action:'checkIn',guest_id:input}).catch(()=>{});
+      return;
+    }
+    // 無料 or 収済 → 即座にOK表示
+    applyCheckinLocally(input,{pay_confirmed:'TRUE'});
+    showResult({ok:true,pay_type:localGuest.pay_type,name:localGuest.name,gender:localGuest.gender,amount:localGuest.amount,promoter_id:localGuest.promoter_id},input);
+    document.getElementById('ci-input').value='';
+    // バックグラウンドでAPI送信（UIは既に更新済み）
+    apiPost({action:'checkIn',guest_id:input}).catch(()=>{});
+    return;
+  }
+
+  // ローカルにない場合のみAPI待機
   checkinBusy=true;
   const btn=document.getElementById('btn-process');
   btn.innerHTML='<span class="spinner"></span>処理中…';
@@ -708,8 +739,7 @@ async function processCheckin(){
   try{
     const data=await apiPost({action:'checkIn',guest_id:input});
     showResult(data,input);
-    // ★ 成功時はローカル状態を更新（API再取得なし）
-    if(data.ok) applyCheckinLocally(input, {pay_confirmed:'TRUE'});
+    if(data.ok) applyCheckinLocally(input,{pay_confirmed:'TRUE'});
   }finally{
     checkinBusy=false;
     btn.innerHTML='チェックイン処理';
