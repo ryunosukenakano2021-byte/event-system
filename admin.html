@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LUXE PARTY TOKYO — Admin</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500&family=Noto+Serif+JP:wght@300;400&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <style>
   :root{
     --gold:#C9A84C;--gold-light:#E8D08A;--gold-dim:#7a6230;
@@ -15,8 +14,6 @@
   }
   *{margin:0;padding:0;box-sizing:border-box;}
   body{background:var(--black);color:var(--white);font-family:'Noto Sans JP',sans-serif;font-weight:300;min-height:100vh;}
-
-  /* LOGIN */
   #login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative;}
   .bg-glow{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 60% 60% at 70% 50%,rgba(201,168,76,0.05) 0%,transparent 70%);}
   .login-box{position:relative;z-index:2;width:100%;max-width:400px;padding:56px 40px;border:1px solid rgba(201,168,76,0.15);background:rgba(17,17,17,0.9);}
@@ -29,8 +26,6 @@
   .btn-login{width:100%;margin-top:24px;background:var(--gold);border:none;cursor:pointer;padding:16px;color:var(--black);font-family:'Noto Sans JP',sans-serif;font-size:0.62rem;font-weight:600;letter-spacing:0.25em;text-transform:uppercase;transition:all 0.3s;}
   .btn-login:hover{background:var(--gold-light);}
   .login-error{color:#CF4444;font-size:0.68rem;margin-top:12px;display:none;}
-
-  /* APP */
   #app{display:none;}
   #nav{position:sticky;top:0;z-index:100;background:rgba(8,8,8,0.96);backdrop-filter:blur(20px);border-bottom:1px solid rgba(201,168,76,0.2);padding:0 40px;display:flex;align-items:center;justify-content:space-between;height:60px;}
   .nav-logo{font-family:'Noto Serif JP',serif;font-size:0.85rem;color:var(--gold);letter-spacing:0.3em;}
@@ -42,15 +37,11 @@
   .event-pill{font-size:0.58rem;letter-spacing:0.1em;color:var(--gold-dim);border:1px solid rgba(201,168,76,0.25);padding:4px 12px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .btn-logout{background:none;border:none;cursor:pointer;font-size:0.58rem;letter-spacing:0.15em;color:var(--gray);font-family:'Noto Sans JP',sans-serif;transition:color 0.2s;}
   .btn-logout:hover{color:var(--white);}
-
-  /* PAGES */
   .page{display:none;padding:36px 40px;}
   .page.active{display:block;}
   .page-eyebrow{font-size:0.55rem;letter-spacing:0.35em;color:var(--gold);text-transform:uppercase;margin-bottom:6px;}
   .page-title{font-family:'Noto Serif JP',serif;font-size:2.2rem;font-weight:300;color:var(--white);margin-bottom:28px;}
   .page-title span{color:var(--gold);font-style:italic;}
-
-  /* STATS */
   .stats-row{display:grid;grid-template-columns:repeat(6,1fr);gap:1px;background:rgba(255,255,255,0.06);margin-bottom:24px;}
   .stat-card{background:var(--dark);padding:20px 22px;position:relative;overflow:hidden;}
   .stat-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:0;transition:opacity 0.3s;}
@@ -58,8 +49,6 @@
   .stat-label{font-size:0.5rem;letter-spacing:0.2em;color:var(--gray);text-transform:uppercase;margin-bottom:8px;}
   .stat-value{font-family:'Noto Serif JP',serif;font-size:2.2rem;font-weight:300;line-height:1;}
   .sv-gold{color:var(--gold);}.sv-free{color:var(--free);}.sv-paid{color:var(--paid);}.sv-cash{color:var(--cash);}
-
-  /* TOOLBAR */
   .toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px;}
   .search-wrap{position:relative;flex:1;min-width:160px;max-width:260px;}
   .search-input{width:100%;background:var(--dark2);border:1px solid rgba(255,255,255,0.08);padding:9px 10px 9px 32px;color:var(--white);font-family:'Noto Sans JP',sans-serif;font-size:0.7rem;outline:none;transition:border-color 0.3s;}
@@ -69,8 +58,6 @@
   .btn-action{background:transparent;border:1px solid rgba(201,168,76,0.4);color:var(--gold);padding:9px 16px;cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-size:0.58rem;letter-spacing:0.18em;text-transform:uppercase;transition:all 0.3s;}
   .btn-action:hover{background:rgba(201,168,76,0.08);border-color:var(--gold);}
   .spacer{flex:1;}
-
-  /* TABLE */
   .table-scroll{overflow-x:auto;}
   table{width:100%;border-collapse:collapse;min-width:700px;}
   thead tr{border-bottom:1px solid rgba(201,168,76,0.2);}
@@ -90,8 +77,6 @@
   .btn-ci{background:none;border:1px solid rgba(76,175,130,0.3);color:var(--paid);padding:4px 12px;cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-size:0.55rem;letter-spacing:0.1em;transition:all 0.3s;}
   .btn-ci:hover{background:rgba(76,175,130,0.1);}
   .btn-ci:disabled{opacity:0.3;cursor:default;border-color:transparent;color:var(--gray);}
-
-  /* PROMOTER CARDS */
   .promoter-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:1px;background:rgba(255,255,255,0.06);margin-top:24px;}
   .promoter-card{background:var(--dark);padding:24px 28px;transition:background 0.3s;}
   .promoter-card:hover{background:var(--dark2);}
@@ -109,8 +94,6 @@
   .p-url-text{font-size:0.6rem;color:var(--gray-light);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;}
   .copy-btn{background:none;border:none;color:var(--gold-dim);cursor:pointer;font-size:0.75rem;padding:2px 6px;transition:color 0.2s;flex-shrink:0;}
   .copy-btn:hover{color:var(--gold);}
-
-  /* CHECKIN */
   .checkin-layout{display:grid;grid-template-columns:1fr 1fr;gap:28px;max-width:860px;}
   .checkin-panel{background:var(--dark);border:1px solid rgba(255,255,255,0.06);padding:28px;}
   .panel-title{font-family:'Noto Serif JP',serif;font-size:1.3rem;color:var(--white);margin-bottom:18px;}
@@ -141,8 +124,6 @@
   .manual-input::placeholder{color:rgba(255,255,255,0.2);}
   .btn-process{width:100%;background:var(--gold);border:none;cursor:pointer;padding:15px;color:var(--black);font-family:'Noto Sans JP',sans-serif;font-size:0.62rem;font-weight:600;letter-spacing:0.25em;text-transform:uppercase;transition:all 0.3s;}
   .btn-process:hover{background:var(--gold-light);}
-
-  /* RESULT */
   .result-card{display:none;margin-top:16px;border:1px solid;padding:20px 20px 16px;position:relative;animation:fadeUp 0.3s ease both;}
   .result-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
   .rc-free{border-color:rgba(155,142,196,0.35);background:rgba(155,142,196,0.06);}.rc-free::before{background:var(--free);}
@@ -158,7 +139,6 @@
   .ai-free{background:rgba(155,142,196,0.15);border:1px solid rgba(155,142,196,0.4);}
   .ai-paid{background:rgba(76,175,130,0.15);border:1px solid rgba(76,175,130,0.4);}
   .ai-cash{background:rgba(232,168,56,0.15);border:1px solid rgba(232,168,56,0.4);}
-  .ai-unpaid{background:rgba(207,68,68,0.15);border:1px solid rgba(207,68,68,0.4);}
   .ai-dup{background:rgba(201,168,76,0.15);border:1px solid rgba(201,168,76,0.4);}
   .ai-error{background:rgba(207,68,68,0.12);border:1px solid rgba(207,68,68,0.3);}
   .rc-divider{height:1px;background:rgba(255,255,255,0.07);margin:12px 0;}
@@ -167,15 +147,15 @@
   .rc-meta-value{font-size:0.75rem;color:var(--white);}
   .rc-instr{margin-top:12px;padding:12px 14px;font-size:0.7rem;line-height:1.6;}
   .rc-instr.inst-cash{background:rgba(232,168,56,0.1);border:1px solid rgba(232,168,56,0.3);color:var(--cash);}
-  .rc-instr.inst-unpaid{background:rgba(207,68,68,0.08);border:1px solid rgba(207,68,68,0.3);color:var(--unpaid);}
   .amount-big{font-family:'Noto Serif JP',serif;font-size:2.2rem;line-height:1;}
   .amt-free{color:var(--free);font-size:1.1rem;letter-spacing:0.05em;}
   .amt-paid{color:var(--paid);}
   .amt-cash{color:var(--cash);}
   .btn-confirm-cash{width:100%;margin-top:10px;background:var(--cash);border:none;cursor:pointer;padding:13px;color:var(--black);font-family:'Noto Sans JP',sans-serif;font-size:0.6rem;font-weight:600;letter-spacing:0.22em;text-transform:uppercase;transition:all 0.3s;}
   .btn-confirm-cash:hover{background:#f0b840;}
-
-  /* EVENTS */
+  /* ローディングスピナー */
+  .spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(201,168,76,0.3);border-top-color:var(--gold);border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:middle;margin-right:6px;}
+  @keyframes spin{to{transform:rotate(360deg)}}
   .event-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1px;background:rgba(255,255,255,0.06);margin-top:20px;}
   .event-card{background:var(--dark);padding:22px 26px;transition:background 0.3s;}
   .event-card:hover{background:var(--dark2);}
@@ -185,8 +165,6 @@
   .status-active{background:rgba(76,175,130,0.1);color:var(--paid);border:1px solid rgba(76,175,130,0.3);}
   .status-closed{background:rgba(255,255,255,0.04);color:var(--gray);border:1px solid rgba(255,255,255,0.1);}
   .event-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
-
-  /* MODAL */
   .modal-overlay{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);align-items:center;justify-content:center;}
   .modal-overlay.active{display:flex;}
   .modal{background:var(--dark);border:1px solid rgba(201,168,76,0.2);width:100%;max-width:480px;padding:40px;animation:fadeUp 0.4s ease both;max-height:90vh;overflow-y:auto;}
@@ -200,11 +178,8 @@
   .modal-select{width:100%;background:var(--dark2);border:none;border-bottom:1px solid rgba(255,255,255,0.12);color:var(--white);padding:12px 4px;font-family:'Noto Sans JP',sans-serif;font-size:0.85rem;outline:none;cursor:pointer;}
   .modal-select option{background:var(--dark2);}
   .modal-note{font-size:0.6rem;color:var(--gray);margin-top:6px;line-height:1.6;padding:8px 12px;background:rgba(255,255,255,0.03);border-left:2px solid rgba(201,168,76,0.3);}
-
-  /* Pricing grid */
   .price-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:4px;}
   .price-item label{display:block;font-size:0.52rem;letter-spacing:0.2em;color:var(--gray);text-transform:uppercase;margin-bottom:6px;}
-
   .toast{position:fixed;bottom:24px;right:24px;z-index:500;background:var(--dark2);border:1px solid rgba(201,168,76,0.3);padding:12px 18px;font-size:0.68rem;color:var(--white);display:none;animation:fadeUp 0.4s ease both;}
   .toast.show{display:block;}
   @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
@@ -214,7 +189,6 @@
 </head>
 <body>
 
-<!-- LOGIN -->
 <div id="login-screen">
   <div class="bg-glow"></div>
   <div class="login-box">
@@ -229,7 +203,6 @@
   </div>
 </div>
 
-<!-- APP -->
 <div id="app">
   <nav id="nav">
     <div class="nav-logo">LUXE PARTY TOKYO</div>
@@ -245,7 +218,6 @@
     </div>
   </nav>
 
-  <!-- CHECKIN -->
   <div class="page active" id="page-checkin">
     <div class="page-eyebrow">入場管理</div>
     <h1 class="page-title">チェック<span>イン</span></h1>
@@ -265,7 +237,7 @@
         </div>
         <div class="divider-or"><span>または手動入力</span></div>
         <input class="manual-input" id="ci-input" placeholder="Guest ID (例: G-ABC123)" onkeydown="if(event.key==='Enter')processCheckin()" oninput="this.value=this.value.toUpperCase()">
-        <button class="btn-process" onclick="processCheckin()">チェックイン処理</button>
+        <button class="btn-process" id="btn-process" onclick="processCheckin()">チェックイン処理</button>
       </div>
       <div class="checkin-panel">
         <div class="panel-title">結果 <em>Result</em></div>
@@ -283,7 +255,6 @@
     </div>
   </div>
 
-  <!-- GUESTS -->
   <div class="page" id="page-guests">
     <div class="page-eyebrow">来場者管理</div>
     <h1 class="page-title">ゲスト <span>一覧</span></h1>
@@ -308,7 +279,7 @@
       </select>
       <select class="filter-select" id="g-filter-promo" onchange="renderGuestTable()"><option value="all">全プロモーター</option></select>
       <div class="spacer"></div>
-      <button class="btn-action" onclick="loadGuests()">🔄 更新</button>
+      <button class="btn-action" onclick="loadGuests(true)">🔄 更新</button>
     </div>
     <div class="table-scroll">
       <table><thead><tr>
@@ -317,7 +288,6 @@
     </div>
   </div>
 
-  <!-- PROMOTERS -->
   <div class="page" id="page-promoters">
     <div class="page-eyebrow">プロモーター管理</div>
     <h1 class="page-title">プロモーター <span>実績</span></h1>
@@ -329,7 +299,6 @@
     <div class="promoter-grid" id="promoter-grid"></div>
   </div>
 
-  <!-- EVENTS -->
   <div class="page" id="page-events">
     <div class="page-eyebrow">イベント管理</div>
     <h1 class="page-title">イベント <span>一覧</span></h1>
@@ -342,7 +311,6 @@
   </div>
 </div>
 
-<!-- ADD PROMOTER MODAL -->
 <div class="modal-overlay" id="modal-promoter">
   <div class="modal">
     <div class="modal-title">プロモーターを追加</div>
@@ -359,25 +327,19 @@
       <input class="form-input" id="mp-password" placeholder="例: alex2025">
     </div>
     <div class="modal-group">
-      <label class="form-label">招待客の種別（顧客には非表示）</label>
+      <label class="form-label">招待客の種別</label>
       <select class="modal-select" id="mp-paytype" onchange="togglePriceFields()">
         <option value="paid">有料招待</option>
         <option value="free">無料招待</option>
       </select>
-      <div class="modal-note">このプロモーターから申し込んだお客様全員に自動適用されます。お客様には表示されません。</div>
+      <div class="modal-note">このプロモーターから申し込んだお客様全員に自動適用されます。</div>
     </div>
     <div id="mp-price-fields">
       <div class="modal-group">
         <label class="form-label">入場料（性別別）</label>
         <div class="price-grid">
-          <div class="price-item">
-            <label>男性 (¥)</label>
-            <input class="form-input" id="mp-price-male" type="number" placeholder="5000" value="5000">
-          </div>
-          <div class="price-item">
-            <label>女性 (¥)</label>
-            <input class="form-input" id="mp-price-female" type="number" placeholder="3000" value="3000">
-          </div>
+          <div class="price-item"><label>男性 (¥)</label><input class="form-input" id="mp-price-male" type="number" placeholder="5000" value="5000"></div>
+          <div class="price-item"><label>女性 (¥)</label><input class="form-input" id="mp-price-female" type="number" placeholder="3000" value="3000"></div>
         </div>
       </div>
     </div>
@@ -388,7 +350,6 @@
   </div>
 </div>
 
-<!-- ADD EVENT MODAL -->
 <div class="modal-overlay" id="modal-event">
   <div class="modal">
     <div class="modal-title">イベントを追加</div>
@@ -417,12 +378,24 @@ let allGuests=[], allPromoters=[], allEvents=[];
 let currentEventId='', currentEventName='';
 let cameraStream=null, scanLoop=null, facingMode='environment';
 let lastScanned='', lastScannedTime=0;
+let checkinBusy=false; // ★ 二重送信防止フラグ
 
 async function apiGet(p)  { const r=await fetch(API+'?'+new URLSearchParams(p).toString()); return r.json(); }
 async function apiPost(b) { const r=await fetch(API,{method:'POST',body:JSON.stringify(b)}); return r.json(); }
 
 let toastT;
 function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),3200); }
+
+// ── ローカル状態を直接更新（API再取得なし）★最適化ポイント
+function applyCheckinLocally(guestId, extraFields) {
+  const g = allGuests.find(g=>g.guest_id===guestId);
+  if(g) {
+    g.arrived = 'TRUE';
+    if(extraFields) Object.assign(g, extraFields);
+    updateStats();
+    renderGuestTable();
+  }
+}
 
 async function doLogin() {
   const pw = document.getElementById('login-pw').value.trim();
@@ -453,10 +426,8 @@ async function loadEvents() {
   if(!data.ok) return;
   allEvents = data.events;
   renderEventCards();
-  // モーダルのイベント選択を更新
   const sel = document.getElementById('mp-event'); sel.innerHTML='';
   allEvents.forEach(ev=>{ const o=document.createElement('option'); o.value=ev.event_id; o.textContent=ev.name+' ('+ev.date+')'; sel.appendChild(o); });
-  // 最初のアクティブイベントを自動選択
   const active = allEvents.find(e=>e.status==='active');
   if(active && !currentEventId) setActiveEvent(active.event_id, active.name);
 }
@@ -503,14 +474,16 @@ async function closeEvent(id) {
 }
 
 // ── GUESTS ──
-async function loadGuests() {
+// ★ force=trueのときのみAPI取得、falseはキャッシュ再利用
+async function loadGuests(force) {
   if(!currentEventId) return;
-  const data=await apiGet({action:'getGuests',event_id:currentEventId});
-  if(!data.ok) return;
-  allGuests=data.guests;
+  if(force || allGuests.length===0) {
+    const data=await apiGet({action:'getGuests',event_id:currentEventId});
+    if(!data.ok) return;
+    allGuests=data.guests;
+  }
   updateStats();
   renderGuestTable();
-  // プロモーターフィルター更新
   const sel=document.getElementById('g-filter-promo'), cur=sel.value;
   sel.innerHTML='<option value="all">全プロモーター</option>';
   allPromoters.forEach(p=>{ const o=document.createElement('option'); o.value=p.promoter_id; o.textContent=p.name; sel.appendChild(o); });
@@ -580,12 +553,14 @@ function renderGuestTable() {
 
 async function tableCheckIn(guestId) {
   const data=await apiPost({action:'checkIn',guest_id:guestId});
-  if(data.ok){ await loadGuests(); toast('✦ '+data.name+' さんが来場しました'); }
-  else if(data.status==='cash_required'){
+  if(data.ok){
+    applyCheckinLocally(guestId, {pay_confirmed:'TRUE'});
+    toast('✦ '+data.name+' さんが来場しました');
+  } else if(data.status==='cash_required'){
     const genLabel=data.gender==='female'?'女性':'男性';
     if(confirm(data.name+' さん（'+genLabel+'）\n有料 ¥'+Number(data.amount).toLocaleString()+' を受け取りましたか？')){
       const d2=await apiPost({action:'checkIn',guest_id:guestId,confirm_cash:true});
-      if(d2.ok){ await loadGuests(); toast('✦ 収金済み — '+d2.name+' さん入場'); }
+      if(d2.ok){ applyCheckinLocally(guestId, {pay_confirmed:'TRUE'}); toast('✦ 収金済み — '+d2.name+' さん入場'); }
     }
   } else toast('⚠ '+data.message);
 }
@@ -621,23 +596,14 @@ function renderPromoterGrid() {
         <div><div class="p-stat-val" style="color:var(--white)">${pct}%</div><div class="p-stat-label">来場率</div></div>
       </div>
       <div class="p-bar"><div class="p-bar-fill" style="width:${barW}%"></div></div>
-      <div class="p-meta">
-        来場収益: <strong>¥${rev.toLocaleString()}</strong><br>
-        種別: <strong>${payTypeLabel}${priceInfo}</strong>
-      </div>
+      <div class="p-meta">来場収益: <strong>¥${rev.toLocaleString()}</strong><br>種別: <strong>${payTypeLabel}${priceInfo}</strong></div>
       <div class="p-url-block">
         <div class="p-url-label">📋 招待URL（お客様にシェア）</div>
-        <div class="p-url-row">
-          <div class="p-url-text">${regUrl}</div>
-          <button class="copy-btn" onclick="copyText('${regUrl}',this)">📋</button>
-        </div>
+        <div class="p-url-row"><div class="p-url-text">${regUrl}</div><button class="copy-btn" onclick="copyText('${regUrl}',this)">📋</button></div>
       </div>
       <div class="p-url-block">
         <div class="p-url-label">📊 プロモーターダッシュボード</div>
-        <div class="p-url-row">
-          <div class="p-url-text">${promUrl}</div>
-          <button class="copy-btn" onclick="copyText('${promUrl}',this)">📋</button>
-        </div>
+        <div class="p-url-row"><div class="p-url-text">${promUrl}</div><button class="copy-btn" onclick="copyText('${promUrl}',this)">📋</button></div>
       </div>`;
     grid.appendChild(card);
   });
@@ -656,18 +622,13 @@ async function addPromoter() {
   const priceFemale=payType==='free'?0:parseInt(document.getElementById('mp-price-female').value)||0;
   if(!name||!password){ toast('名前とパスワードを入力してください'); return; }
   const data=await apiPost({action:'addPromoter',event_id:eventId,name,password,pay_type:payType,price_male:priceMale,price_female:priceFemale});
-  if(data.ok){
-    closeModal('modal-promoter');
-    await loadPromoters();
-    toast('✦ '+name+' を追加しました — URL発行済み');
-  } else toast('エラー: '+data.message);
+  if(data.ok){ closeModal('modal-promoter'); await loadPromoters(); toast('✦ '+name+' を追加しました — URL発行済み'); }
+  else toast('エラー: '+data.message);
 }
 
 function togglePriceFields(){
   document.getElementById('mp-price-fields').style.display=document.getElementById('mp-paytype').value==='free'?'none':'';
 }
-
-// ── MODALS ──
 function openAddPromoterModal(){
   document.getElementById('modal-promoter').classList.add('active');
   document.getElementById('mp-name').value='';
@@ -678,7 +639,7 @@ function openAddPromoterModal(){
 function openAddEventModal(){ document.getElementById('modal-event').classList.add('active'); }
 function closeModal(id){ document.getElementById(id).classList.remove('active'); }
 
-// ── CAMERA ──
+// ── CAMERA (jsQR CDNフォールバック付き) ──
 const JSQR_CDNS=['https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js','https://unpkg.com/jsqr@1.4.0/dist/jsQR.js'];
 function loadScript(url){return new Promise((res,rej)=>{if(window.jsQR){res();return;}const s=document.createElement('script');s.src=url;s.onload=res;s.onerror=rej;document.head.appendChild(s);})}
 async function loadJsQR(){if(window.jsQR)return;for(const u of JSQR_CDNS){try{await loadScript(u);if(window.jsQR)return;}catch(e){}}throw new Error('load failed');}
@@ -689,8 +650,9 @@ async function startCamera(){
   if(!navigator.mediaDevices){ toast('⚠ カメラ非対応'); return; }
   try{
     cameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode,width:{ideal:1280},height:{ideal:1280}}});
-    document.getElementById('qr-video').srcObject=cameraStream;
-    await document.getElementById('qr-video').play();
+    const video=document.getElementById('qr-video');
+    video.srcObject=cameraStream;
+    await video.play();
     document.getElementById('camera-wrap').classList.add('active');
     document.getElementById('btn-cam').classList.add('active');
     document.getElementById('btn-flip').style.display='';
@@ -698,7 +660,9 @@ async function startCamera(){
     document.getElementById('cam-label').textContent='カメラを停止';
     const canvas=document.createElement('canvas');
     const ctx=canvas.getContext('2d',{willReadFrequently:true});
+    // ★ スキャン間隔を150msに短縮（検知速度UP）
     scanLoop=setInterval(()=>{
+      if(checkinBusy) return; // ★ 処理中はスキャンをスキップ
       const v=document.getElementById('qr-video');
       if(v.readyState<2||v.videoWidth===0)return;
       canvas.width=v.videoWidth;canvas.height=v.videoHeight;
@@ -708,14 +672,14 @@ async function startCamera(){
       if(c){
         const raw=c.data.trim().toUpperCase();
         const now=Date.now();
-        if(raw===lastScanned&&now-lastScannedTime<3000)return;
+        if(raw===lastScanned&&now-lastScannedTime<4000)return; // ★ 同一コード4秒クールダウン
         lastScanned=raw; lastScannedTime=now;
         document.getElementById('camera-wrap').style.outline='3px solid var(--gold)';
         setTimeout(()=>document.getElementById('camera-wrap').style.outline='',500);
         document.getElementById('ci-input').value=raw;
         processCheckin();
       }
-    },250);
+    },150);
   }catch(err){
     cameraStream=null;
     toast(err.name==='NotAllowedError'?'⚠ カメラを許可してください':'⚠ カメラエラー: '+err.message);
@@ -733,12 +697,24 @@ function stopCamera(){
 }
 async function flipCamera(){ facingMode=facingMode==='environment'?'user':'environment'; stopCamera(); await startCamera(); }
 
+// ★ チェックイン処理 — API1回のみ、完了後loadGuests()を呼ばない
 async function processCheckin(){
   const input=document.getElementById('ci-input').value.trim().toUpperCase();
-  if(!input)return;
-  const data=await apiPost({action:'checkIn',guest_id:input});
-  showResult(data,input);
-  if(data.ok) await loadGuests();
+  if(!input||checkinBusy)return;
+  checkinBusy=true;
+  const btn=document.getElementById('btn-process');
+  btn.innerHTML='<span class="spinner"></span>処理中…';
+  btn.disabled=true;
+  try{
+    const data=await apiPost({action:'checkIn',guest_id:input});
+    showResult(data,input);
+    // ★ 成功時はローカル状態を更新（API再取得なし）
+    if(data.ok) applyCheckinLocally(input, {pay_confirmed:'TRUE'});
+  }finally{
+    checkinBusy=false;
+    btn.innerHTML='チェックイン処理';
+    btn.disabled=false;
+  }
 }
 
 function showResult(data,input){
@@ -771,7 +747,7 @@ function showResult(data,input){
       <div style="grid-column:1/-1"><div class="rc-meta-label">受取金額</div><div class="rc-meta-value"><span class="amount-big amt-cash">¥${Number(data.amount).toLocaleString()}</span></div></div>`;
     extra.innerHTML=`
       <div class="rc-instr inst-cash"><strong>スタッフへ：</strong> ${genLabel} ¥${Number(data.amount).toLocaleString()} を受け取り後、ボタンを押してください。</div>
-      <button class="btn-confirm-cash" onclick="confirmCash('${document.getElementById('ci-input').value.trim().toUpperCase()}')">💴 受取済み — 入場を許可する</button>`;
+      <button class="btn-confirm-cash" onclick="confirmCash('${input}')">💴 受取済み — 入場を許可する</button>`;
   } else if(data.ok){
     const pt=data.pay_type;
     const promo=allPromoters.find(p=>p.promoter_id===data.promoter_id);
@@ -794,9 +770,14 @@ function showResult(data,input){
 }
 
 async function confirmCash(guestId){
-  const data=await apiPost({action:'checkIn',guest_id:guestId,confirm_cash:true});
-  showResult(data,guestId);
-  if(data.ok){ await loadGuests(); toast('✦ 収金済み — '+data.name+' さん入場'); }
+  checkinBusy=true;
+  try{
+    const data=await apiPost({action:'checkIn',guest_id:guestId,confirm_cash:true});
+    showResult(data,guestId);
+    if(data.ok){ applyCheckinLocally(guestId,{pay_confirmed:'TRUE'}); toast('✦ 収金済み — '+data.name+' さん入場'); }
+  }finally{
+    checkinBusy=false;
+  }
 }
 </script>
 </body>
