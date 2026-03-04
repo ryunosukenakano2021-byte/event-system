@@ -4,15 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LUXE PARTY TOKYO</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500&family=Noto+Serif+JP:wght@300;400&display=swap" rel="stylesheet">
+<!-- フォントはシステムフォント使用（高速化）-->
 <style>
 :root{--gold:#C9A84C;--gold-light:#E8D08A;--gold-dim:#7a6230;--black:#080808;--white:#F5F0E8;--gray:#888880;}
 *{margin:0;padding:0;box-sizing:border-box;}
-body{background:var(--black);color:var(--white);font-family:'Noto Sans JP',sans-serif;font-weight:300;min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;}
+body{background:var(--black);color:var(--white);font-family:-apple-system,'Hiragino Sans','Yu Gothic UI',sans-serif;font-weight:300;min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;}
 .bg-glow{position:fixed;inset:0;pointer-events:none;z-index:1;background:radial-gradient(ellipse 70% 70% at 50% 50%,rgba(8,8,8,0.2) 0%,rgba(8,8,8,0.8) 60%,rgba(8,8,8,0.96) 100%);}
 .wrap{position:relative;z-index:2;width:100%;max-width:480px;padding:56px 40px;}
-.brand{font-family:'Noto Serif JP',serif;font-size:0.62rem;letter-spacing:0.5em;color:var(--gold);margin-bottom:6px;}
-.ttl{font-family:'Noto Serif JP',serif;font-size:2.6rem;font-weight:300;line-height:1.15;color:var(--white);margin-bottom:4px;}
+.brand{font-family:'Hiragino Mincho ProN','Yu Mincho',serif;font-size:0.62rem;letter-spacing:0.5em;color:var(--gold);margin-bottom:6px;}
+.ttl{font-family:'Hiragino Mincho ProN','Yu Mincho',serif;font-size:2.6rem;font-weight:300;line-height:1.15;color:var(--white);margin-bottom:4px;}
 .ttl em{font-style:normal;color:var(--gold);}
 .sub{font-size:0.68rem;letter-spacing:0.18em;color:var(--gray);margin-bottom:36px;}
 .pbadge{display:inline-flex;align-items:center;gap:10px;border:1px solid rgba(201,168,76,0.3);padding:10px 20px;margin-bottom:32px;background:rgba(201,168,76,0.04);}
@@ -21,14 +21,14 @@ body{background:var(--black);color:var(--white);font-family:'Noto Sans JP',sans-
 .pn{font-size:0.82rem;color:var(--gold);}
 .fg{margin-bottom:28px;}
 .fl{display:block;font-size:0.58rem;letter-spacing:0.22em;color:var(--gray);margin-bottom:10px;}
-.fi{width:100%;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.12);padding:11px 0;color:var(--white);font-family:'Noto Sans JP',sans-serif;font-size:0.92rem;outline:none;transition:border-color 0.3s;}
+.fi{width:100%;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.12);padding:11px 0;color:var(--white);font-family:-apple-system,'Hiragino Sans','Yu Gothic UI',sans-serif;font-size:0.92rem;outline:none;transition:border-color 0.3s;}
 .fi::placeholder{color:rgba(255,255,255,0.2);}
 .fi:focus{border-bottom-color:var(--gold);}
 .gt{display:flex;margin-top:4px;}
-.gb{flex:1;background:transparent;border:1px solid rgba(255,255,255,0.12);padding:13px;color:var(--gray);font-family:'Noto Sans JP',sans-serif;font-size:0.72rem;cursor:pointer;transition:all 0.3s;text-align:center;}
+.gb{flex:1;background:transparent;border:1px solid rgba(255,255,255,0.12);padding:13px;color:var(--gray);font-family:-apple-system,'Hiragino Sans','Yu Gothic UI',sans-serif;font-size:0.72rem;cursor:pointer;transition:all 0.3s;text-align:center;}
 .gb:first-child{border-right:none;}
 .gb.on{background:rgba(201,168,76,0.1);border-color:var(--gold);color:var(--gold);}
-.sbtn{width:100%;margin-top:20px;background:var(--gold);border:none;cursor:pointer;padding:17px;color:var(--black);font-family:'Noto Sans JP',sans-serif;font-size:0.72rem;font-weight:500;letter-spacing:0.25em;transition:background 0.3s;}
+.sbtn{width:100%;margin-top:20px;background:var(--gold);border:none;cursor:pointer;padding:17px;color:var(--black);font-family:-apple-system,'Hiragino Sans','Yu Gothic UI',sans-serif;font-size:0.72rem;font-weight:500;letter-spacing:0.25em;transition:background 0.3s;}
 .sbtn:hover{background:var(--gold-light);}
 .sbtn:disabled{opacity:0.5;cursor:not-allowed;}
 .eb{background:rgba(207,68,68,0.08);border:1px solid rgba(207,68,68,0.3);padding:13px 16px;font-size:0.7rem;color:#CF4444;margin-bottom:18px;display:none;}
@@ -46,7 +46,7 @@ body{background:var(--black);color:var(--white);font-family:'Noto Sans JP',sans-
 
   <!-- 無効 -->
   <div id="nf" style="display:none;text-align:center;padding:60px 0;">
-    <div style="font-family:'Noto Serif JP',serif;font-size:1.6rem;color:var(--gray);margin-bottom:12px;">招待リンクが無効です</div>
+    <div style="font-family:'Hiragino Mincho ProN','Yu Mincho',serif;font-size:1.6rem;color:var(--gray);margin-bottom:12px;">招待リンクが無効です</div>
     <div style="font-size:0.7rem;color:var(--gray);">プロモーターから受け取ったリンクをご確認ください。</div>
   </div>
 
@@ -72,7 +72,7 @@ body{background:var(--black);color:var(--white);font-family:'Noto Sans JP',sans-
   <!-- 完了 -->
   <div id="ok" style="display:none;text-align:center;padding:20px 0;">
     <div style="width:56px;height:56px;border:1px solid var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;font-size:1.4rem;">✦</div>
-    <div style="font-family:'Noto Serif JP',serif;font-size:1.8rem;color:var(--gold);margin-bottom:8px;">登録完了</div>
+    <div style="font-family:'Hiragino Mincho ProN','Yu Mincho',serif;font-size:1.8rem;color:var(--gold);margin-bottom:8px;">登録完了</div>
     <p style="font-size:0.72rem;color:var(--gray);line-height:1.9;margin-bottom:16px;">ご登録ありがとうございます。<br>下記のQRコードを当日ご提示ください。</p>
     <div style="padding:12px 16px;background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.35);color:var(--gold);font-size:0.72rem;margin-bottom:20px;">📸 このQRコードをスクリーンショットして保存してください</div>
     <div id="qr-wrap"></div>
@@ -135,6 +135,12 @@ var QREngine=(function(){
 
 /* App */
 var API='https://script.google.com/macros/s/AKfycbzqNk2YEdEhwto3K84_w5O4Fpmb77oem29cpyN_4J-em8c9SRaDe9fvThIMM8kFO8g/exec';
+
+// ★ GASウォームアップ: ページ読み込み直後に軽いリクエストを送り
+//    コールドスタートを先に済ませる（getPromoterBySlugより前に実行）
+(function warmup(){
+  fetch(API+'?action=ping').catch(function(){});
+})();
 var promo=null,sex='male';
 
 function show(id){
@@ -176,6 +182,8 @@ function reg(){
     wrap.innerHTML='';
     try{wrap.appendChild(QREngine.draw(gid,200));}catch(err){wrap.innerHTML='<p style="color:#000;padding:8px;font-size:0.75rem;">'+gid+'</p>';}
     show('ok');
+    // ★ QRコードをメールで送信（バックグラウンド・失敗しても画面に影響なし）
+    apiPost({action:'sendQREmail',guest_id:gid,email:mail,name:name},function(){});
   });
 }
 </script>
